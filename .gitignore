@@ -1,0 +1,9 @@
+.next/
+node_modules/
+*.db
+*.db-shm
+*.db-wal
+.env*.local
+out/
+build/
+.DS_Store

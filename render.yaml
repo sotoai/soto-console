@@ -1,0 +1,21 @@
+services:
+  - type: web
+    runtime: node
+    name: soto-console
+    repo: https://github.com/sotoai/soto-console.git
+    branch: main
+    buildCommand: npm install && npm run build && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public
+    startCommand: node .next/standalone/server.js
+    envVars:
+      - key: DATABASE_PATH
+        value: /var/data/homebase.db
+      - key: NODE_ENV
+        value: production
+      - key: HOSTNAME
+        value: 0.0.0.0
+      - key: PORT
+        value: 3000
+    disk:
+      name: sqlite-data
+      mountPath: /var/data
+      sizeGB: 1

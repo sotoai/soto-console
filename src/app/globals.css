@@ -1,0 +1,290 @@
+@import "tailwindcss";
+
+/* ========================================
+   HOMEBASE — DESIGN SYSTEM
+   Apple Design Language
+   ======================================== */
+
+@theme {
+  --font-sans: -apple-system, 'SF Pro Display', 'SF Pro Text', system-ui, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, monospace;
+}
+
+/* ---- Light Mode (default) ---- */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f2f2f7;
+  --bg-tertiary: #e5e5ea;
+  --bg-glass: rgba(255, 255, 255, 0.72);
+  --bg-glass-hover: rgba(255, 255, 255, 0.88);
+  --bg-elevated: #ffffff;
+
+  --text-primary: #000000;
+  --text-secondary: rgba(60, 60, 67, 0.6);
+  --text-muted: rgba(60, 60, 67, 0.3);
+  --text-inverse: #ffffff;
+
+  --accent: #007AFF;
+  --accent-hover: #0066D6;
+  --accent-soft: rgba(0, 122, 255, 0.08);
+  --accent-secondary: #5856D6;
+
+  --success: #34C759;
+  --warning: #FF9500;
+  --danger: #FF3B30;
+  --info: #5AC8FA;
+
+  --border: rgba(0, 0, 0, 0.04);
+  --border-strong: rgba(0, 0, 0, 0.08);
+  --border-glass: rgba(0, 0, 0, 0.03);
+
+  --shadow-xs: none;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --shadow-glow: none;
+
+  --sidebar-bg: #f2f2f7;
+  --sidebar-border: rgba(0, 0, 0, 0.06);
+  --sidebar-active-bg: rgba(0, 122, 255, 0.1);
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  --backdrop-blur: 20px;
+
+  --wallpaper-overlay: rgba(255, 255, 255, 0.08);
+  --wallpaper-card-bg: rgba(255, 255, 255, 0.55);
+  --wallpaper-card-border: rgba(255, 255, 255, 0.6);
+  --wallpaper-card-shadow: 0 4px 24px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --wallpaper-bar-bg: rgba(255, 255, 255, 0.5);
+
+  /* Wallpaper card content — dark text on light glass */
+  --wp-text: rgba(0, 0, 0, 0.88);
+  --wp-text-secondary: rgba(0, 0, 0, 0.65);
+  --wp-text-tertiary: rgba(0, 0, 0, 0.45);
+  --wp-text-muted: rgba(0, 0, 0, 0.28);
+  --wp-control-bg: rgba(0, 0, 0, 0.08);
+  --wp-control-active: rgba(0, 0, 0, 0.15);
+  --wp-line: rgba(0, 0, 0, 0.08);
+  --wp-dot: rgba(0, 0, 0, 0.22);
+  --wp-shadow: none;
+  --wp-shadow-strong: none;
+}
+
+/* ---- Dark Mode ---- */
+[data-theme="dark"] {
+  --bg-primary: #000000;
+  --bg-secondary: #1c1c1e;
+  --bg-tertiary: #2c2c2e;
+  --bg-glass: rgba(28, 28, 30, 0.8);
+  --bg-glass-hover: rgba(44, 44, 46, 0.9);
+  --bg-elevated: #1c1c1e;
+
+  --text-primary: #ffffff;
+  --text-secondary: rgba(235, 235, 245, 0.6);
+  --text-muted: rgba(235, 235, 245, 0.3);
+  --text-inverse: #000000;
+
+  --accent: #0A84FF;
+  --accent-hover: #409CFF;
+  --accent-soft: rgba(10, 132, 255, 0.12);
+  --accent-secondary: #5E5CE6;
+
+  --success: #30D158;
+  --warning: #FF9F0A;
+  --danger: #FF453A;
+  --info: #64D2FF;
+
+  --border: rgba(255, 255, 255, 0.04);
+  --border-strong: rgba(255, 255, 255, 0.08);
+  --border-glass: rgba(255, 255, 255, 0.03);
+
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-glow: none;
+
+  --sidebar-bg: #1c1c1e;
+  --sidebar-border: rgba(255, 255, 255, 0.04);
+  --sidebar-active-bg: rgba(10, 132, 255, 0.15);
+
+  --wallpaper-overlay: rgba(0, 0, 0, 0.4);
+  --wallpaper-card-bg: rgba(20, 20, 20, 0.62);
+  --wallpaper-card-border: rgba(255, 255, 255, 0.14);
+  --wallpaper-card-shadow: 0 4px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --wallpaper-bar-bg: rgba(0, 0, 0, 0.45);
+}
+
+/* Wallpaper card content — dark mode overrides (separate block for Tailwind v4 compatibility) */
+:root[data-theme="dark"] {
+  --wp-text: rgba(255, 255, 255, 1);
+  --wp-text-secondary: rgba(255, 255, 255, 0.7);
+  --wp-text-tertiary: rgba(255, 255, 255, 0.5);
+  --wp-text-muted: rgba(255, 255, 255, 0.35);
+  --wp-control-bg: rgba(255, 255, 255, 0.1);
+  --wp-control-active: rgba(255, 255, 255, 0.2);
+  --wp-line: rgba(255, 255, 255, 0.12);
+  --wp-dot: rgba(255, 255, 255, 0.4);
+  --wp-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  --wp-shadow-strong: 0 1px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ---- Base Styles ---- */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.35s ease, color 0.35s ease;
+  min-height: 100vh;
+}
+
+/* ---- Utility Classes ---- */
+.glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--backdrop-blur));
+}
+
+.glass-hover:hover {
+  background: var(--bg-glass-hover);
+}
+
+.card-surface {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  transition: background-color 0.25s ease;
+}
+
+.card-surface:hover {
+  background: var(--bg-secondary);
+}
+
+.card-interactive {
+  transition: transform 0.15s ease, background-color 0.25s ease;
+}
+
+.card-interactive:active {
+  transform: scale(0.98);
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ---- Selection ---- */
+::selection {
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+
+/* ---- Focus Styles ---- */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Animations ---- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s ease-out forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out forwards;
+}
+
+.stagger > * {
+  opacity: 0;
+  animation: fadeIn 0.35s ease-out forwards;
+}
+
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 40ms; }
+.stagger > *:nth-child(3) { animation-delay: 80ms; }
+.stagger > *:nth-child(4) { animation-delay: 120ms; }
+.stagger > *:nth-child(5) { animation-delay: 160ms; }
+.stagger > *:nth-child(6) { animation-delay: 200ms; }
+.stagger > *:nth-child(7) { animation-delay: 240ms; }
+.stagger > *:nth-child(8) { animation-delay: 280ms; }
+.stagger > *:nth-child(9) { animation-delay: 320ms; }
+.stagger > *:nth-child(10) { animation-delay: 360ms; }
+.stagger > *:nth-child(11) { animation-delay: 400ms; }
+.stagger > *:nth-child(12) { animation-delay: 440ms; }
+
+/* ---- Theme Toggle Stars ---- */
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.animate-twinkle {
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+/* ---- Eternity Timeline ---- */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 12px rgba(0, 122, 255, 0.4); }
+  50% { opacity: 0.7; box-shadow: 0 0 24px rgba(0, 122, 255, 0.4); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
