@@ -1,7 +1,6 @@
 import type { AppManifest } from '@/types'
-import { gameRouletteApp } from '@/apps/game-roulette/registry'
 
-export const apps: AppManifest[] = [gameRouletteApp]
+export const apps: AppManifest[] = []
 
 export function getAppById(id: string): AppManifest | undefined {
   return apps.find(app => app.id === id)
