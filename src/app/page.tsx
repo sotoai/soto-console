@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { CalendarWidget } from '@/components/calendar/CalendarWidget'
 import { UpcomingEvents } from '@/components/calendar/UpcomingEvents'
+import { ArcadePanel } from '@/components/arcade/ArcadePanel'
 import { AppDock } from '@/components/shell/AppDock'
 import { SwipeablePages } from '@/components/shell/SwipeablePages'
 import { PageIndicator } from '@/components/shell/PageIndicator'
@@ -52,8 +53,18 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Page 2: Empty for now */}
-            <div className="h-full" />
+            {/* Page 2: Arcade */}
+            <div
+              className="h-full flex items-start justify-center overflow-y-auto md:overflow-hidden"
+              style={{ padding: 'var(--shell-padding-top) var(--shell-padding-x) 0.5rem' }}
+            >
+              <div className="w-full max-w-5xl animate-fade-in h-full">
+                <ArcadePanel
+                  className="rounded-[var(--radius-lg)] bg-[var(--wallpaper-card-bg)] p-4 md:p-5 h-full"
+                  style={glassStyle}
+                />
+              </div>
+            </div>
           </SwipeablePages>
         </div>
 
