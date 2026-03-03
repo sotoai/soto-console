@@ -229,8 +229,15 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
       return
     }
 
+    // Check food BEFORE self-collision so we know whether the tail will be removed
+    const food = foodRef.current
+    const ate = newHead.x === food.x && newHead.y === food.y
+
     // Self collision → gameover
-    if (snake.some(s => s.x === newHead.x && s.y === newHead.y)) {
+    // When NOT eating food, the tail is about to be popped this tick,
+    // so exclude it from collision — the cell it occupies will be free.
+    const bodyToCheck = ate ? snake : snake.slice(0, -1)
+    if (bodyToCheck.some(s => s.x === newHead.x && s.y === newHead.y)) {
       updateGameState('gameover')
       const finalScore = scoreRef.current
       if (finalScore > getStoredHighScore()) {
@@ -239,10 +246,6 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
       }
       return
     }
-
-    // Ate food?
-    const food = foodRef.current
-    const ate = newHead.x === food.x && newHead.y === food.y
 
     const newSnake = [newHead, ...snake]
     if (!ate) {
