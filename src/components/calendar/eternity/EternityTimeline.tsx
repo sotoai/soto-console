@@ -1,161 +1,163 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { motion, LayoutGroup } from 'framer-motion'
-import { ERAS, getEraWidths, formatYearsAgo } from './timeline-data'
-import { EraColumn } from './EraColumn'
+import { useRef, useEffect, useMemo, useState, useCallback } from 'react'
+import { motion } from 'framer-motion'
+import { ERAS, computeEonWidths, getTotalTimelineWidth } from './timeline-data'
+import { EonSection } from './EonSection'
+import { ScrollProgress } from './ScrollProgress'
 import { YouAreHere } from './YouAreHere'
-import { ZoomIndicator } from './ZoomIndicator'
-import { useTimelineZoom } from './useTimelineZoom'
+
+const CODA_WIDTH = 400 // px for the "You Are Here" ending
 
 export function EternityTimeline() {
-  const [selectedEraId, setSelectedEraId] = useState<string | null>(null)
-  const logWidths = useMemo(() => getEraWidths(), [])
-  const viewportRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const layouts = useMemo(() => computeEonWidths(), [])
+  const totalWidth = useMemo(() => getTotalTimelineWidth(), [])
+  const [scrollProgress, setScrollProgress] = useState(0)
+  const [currentEraIndex, setCurrentEraIndex] = useState(0)
 
-  const {
-    scale,
-    scrollLeft,
-    containerWidth,
-    isZoomed,
-    getEraDetailLevel,
-    bindGestures,
-    resetZoom,
-  } = useTimelineZoom({ viewportRef })
-
-  // Clear selection when zooming starts
+  // ── Mouse wheel → horizontal scroll mapping ──
   useEffect(() => {
-    if (isZoomed && selectedEraId) {
-      setSelectedEraId(null)
-    }
-  }, [isZoomed, selectedEraId])
+    const el = scrollRef.current
+    if (!el) return
 
-  // Escape key: collapse selected era (capture phase fires before overlay's handler)
-  useEffect(() => {
-    if (!selectedEraId) return
-
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        setSelectedEraId(null)
+    const handler = (e: WheelEvent) => {
+      // Convert vertical wheel to horizontal scroll (ignore trackpad horizontal gestures)
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault()
+        el.scrollLeft += e.deltaY
       }
     }
-    document.addEventListener('keydown', handler, true)
-    return () => document.removeEventListener('keydown', handler, true)
-  }, [selectedEraId])
 
-  // Viewport width for minimap calculations
-  const viewportWidth = viewportRef.current?.clientWidth ?? 0
-  const minimapHighlightWidth = containerWidth > 0 ? (viewportWidth / containerWidth) * 100 : 100
-  const minimapHighlightLeft = containerWidth > 0 ? (scrollLeft / containerWidth) * 100 : 0
+    el.addEventListener('wheel', handler, { passive: false })
+    return () => el.removeEventListener('wheel', handler)
+  }, [])
+
+  // ── Keyboard navigation ──
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const el = scrollRef.current
+      if (!el) return
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        el.scrollBy({ left: 300, behavior: 'smooth' })
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        el.scrollBy({ left: -300, behavior: 'smooth' })
+      }
+    }
+
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
+
+  // ── Track scroll position for progress bar + background ──
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    const maxScroll = el.scrollWidth - el.clientWidth
+    const progress = maxScroll > 0 ? el.scrollLeft / maxScroll : 0
+    setScrollProgress(progress)
+
+    // Which era is centered in the viewport?
+    const centerX = el.scrollLeft + el.clientWidth / 2
+    let idx = layouts.findIndex(l => centerX >= l.startX && centerX < l.startX + l.width)
+    // Past the last era (in coda section) → clamp to last era
+    if (idx < 0 && layouts.length > 0) {
+      idx = centerX >= layouts[layouts.length - 1].startX ? layouts.length - 1 : 0
+    }
+    if (idx >= 0 && idx !== currentEraIndex) {
+      setCurrentEraIndex(idx)
+    }
+  }, [layouts, currentEraIndex])
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    el.addEventListener('scroll', handleScroll, { passive: true })
+    return () => el.removeEventListener('scroll', handleScroll)
+  }, [handleScroll])
+
+  // ── Background color that shifts with the current era ──
+  const currentEra = ERAS[currentEraIndex]
 
   return (
-    <div className="flex flex-col w-full h-full px-6 pt-16 pb-8">
-      {/* Zoomable viewport */}
-      <div
-        ref={viewportRef}
-        className="flex-1 overflow-hidden relative"
-        style={{ touchAction: 'none' }}
-        {...(bindGestures as any)()}
+    <div className="relative w-full h-full overflow-hidden">
+      {/* Dynamic background — transitions between era color palettes */}
+      <motion.div
+        className="absolute inset-0"
+        animate={{
+          background: `radial-gradient(ellipse at 40% 40%, ${currentEra.color.from} 0%, ${currentEra.color.to} 40%, #050510 90%)`,
+        }}
+        transition={{ duration: 1.5, ease: 'easeInOut' }}
+      />
+
+      {/* Intro prompt — fades out once scrolled */}
+      <motion.div
+        className="absolute left-8 md:left-12 top-1/2 -translate-y-1/2 z-20 pointer-events-none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: scrollProgress < 0.01 ? 0.4 : 0 }}
+        transition={{ duration: 0.6 }}
       >
-        {/* Content track — grows with zoom, translated for scroll */}
-        <div
-          className="h-full"
-          style={{
-            width: isZoomed ? containerWidth : '100%',
-            transform: isZoomed ? `translateX(-${scrollLeft}px)` : undefined,
-            willChange: isZoomed ? 'transform' : undefined,
-          }}
+        <p className="text-[11px] text-white font-mono tracking-[0.15em] uppercase">
+          Scroll to begin
+        </p>
+        <motion.div
+          className="mt-3 flex items-center gap-2"
+          animate={{ x: [0, 8, 0] }}
+          transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
         >
-          <LayoutGroup>
-            <div className="flex h-full items-stretch gap-0">
-              {ERAS.map((era, i) => (
-                <EraColumn
-                  key={era.id}
-                  era={era}
-                  index={i}
-                  isSelected={selectedEraId === era.id}
-                  isAnySelected={selectedEraId !== null}
-                  overviewFlex={logWidths[i]}
-                  detailLevel={getEraDetailLevel(i)}
-                  onSelect={() => !isZoomed && setSelectedEraId(era.id)}
-                  onBack={() => setSelectedEraId(null)}
-                  isLast={i === ERAS.length - 1}
-                />
-              ))}
-            </div>
-          </LayoutGroup>
-        </div>
-      </div>
+          <div className="w-6 h-px bg-white/30" />
+          <div className="text-[10px] text-white/30">&#x2192;</div>
+        </motion.div>
+      </motion.div>
 
-      {/* Zoom indicator */}
-      <ZoomIndicator scale={scale} isZoomed={isZoomed} onReset={resetZoom} />
+      {/* Hide WebKit scrollbar */}
+      <style>{`
+        [data-eternity-scroll]::-webkit-scrollbar { display: none; }
+      `}</style>
 
-      {/* Bottom bar: timeline ruler */}
-      <div className="relative mt-3">
-        {/* The timeline line */}
-        <div className="absolute left-0 right-0 top-0 h-px bg-white/[0.08]" />
+      {/* ── Horizontal scroll container ── */}
+      <div
+        ref={scrollRef}
+        data-eternity-scroll
+        className="relative z-10 h-full overflow-x-auto overflow-y-hidden"
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        <div
+          className="flex h-full items-stretch"
+          style={{ width: totalWidth + CODA_WIDTH }}
+        >
+          {layouts.map((layout, i) => (
+            <EonSection
+              key={layout.era.id}
+              layout={layout}
+              index={i}
+            />
+          ))}
 
-        {/* Minimap viewport highlight (only when zoomed) */}
-        {isZoomed && (
+          {/* Coda: "You Are Here" — the journey's end */}
           <div
-            className="absolute -top-px h-[3px] rounded-full bg-white/25"
-            style={{
-              left: `${minimapHighlightLeft}%`,
-              width: `${Math.max(minimapHighlightWidth, 1)}%`,
-            }}
-          />
-        )}
-
-        {/* Colored era segments along the bottom */}
-        <div className="flex h-[2px] mt-px">
-          {ERAS.map((era, i) => {
-            const f = selectedEraId === era.id ? 8 : selectedEraId !== null ? 0.3 : logWidths[i]
-            return (
-              <div
-                key={era.id}
-                style={{
-                  flex: f,
-                  backgroundColor: era.color.accent,
-                  opacity: 0.15,
-                }}
-              />
-            )
-          })}
-        </div>
-
-        {/* Tick marks + labels */}
-        <div className="flex items-start gap-0 pt-1">
-          {ERAS.map((era, i) => {
-            const f = selectedEraId === era.id ? 8 : selectedEraId !== null ? 0.3 : logWidths[i]
-            return (
-              <div key={era.id} style={{ flex: f }} className="relative min-w-0">
-                {/* Tick mark — colored */}
-                <div
-                  className="absolute -top-[5px] left-0 w-px h-[5px]"
-                  style={{ backgroundColor: era.color.accent, opacity: 0.4 }}
-                />
-                {/* Label — only show if column is wide enough */}
-                {(!selectedEraId || selectedEraId === era.id) && logWidths[i] > 0.3 && (
-                  <motion.span
-                    className="block text-[7px] font-mono text-white/20 tabular-nums truncate pl-1 leading-tight"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 + i * 0.03 }}
-                  >
-                    {formatYearsAgo(era.yearsAgo)}
-                  </motion.span>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* "You Are Here" map pin — anchored to the far right (present day) */}
-        <div className="absolute right-0 bottom-full mb-1">
-          <YouAreHere />
+            className="shrink-0 flex items-center justify-center"
+            style={{ width: CODA_WIDTH, minWidth: CODA_WIDTH }}
+          >
+            <YouAreHere />
+          </div>
         </div>
       </div>
+
+      {/* Progress bar at bottom */}
+      <ScrollProgress
+        progress={scrollProgress}
+        layouts={layouts}
+        currentEraIndex={currentEraIndex}
+      />
     </div>
   )
 }

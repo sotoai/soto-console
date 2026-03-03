@@ -1,7 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { MapPin } from 'lucide-react'
+
+const EASE = [0.16, 1, 0.3, 1] as const
 
 export function YouAreHere() {
   const now = new Date()
@@ -13,32 +14,38 @@ export function YouAreHere() {
 
   return (
     <motion.div
-      className="relative flex flex-col items-center"
-      initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="flex flex-col items-center gap-3 text-center"
+      initial={{ opacity: 0, scale: 0.95 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true, amount: 0.5 }}
+      transition={{ duration: 0.8, ease: EASE }}
     >
-      {/* Map pin */}
-      <div className="relative text-[var(--accent,#67e8f9)]">
-        <MapPin size={18} strokeWidth={2} className="fill-current opacity-80" />
-        {/* Subtle glow behind the pin */}
-        <div
-          className="absolute inset-0 blur-[6px] opacity-30"
-          style={{ color: 'inherit' }}
-        >
-          <MapPin size={18} strokeWidth={2} className="fill-current" />
-        </div>
-      </div>
+      {/* Pulsing dot */}
+      <motion.div
+        className="w-3 h-3 rounded-full animate-pulse-glow"
+        style={{ backgroundColor: '#67e8f9' }}
+      />
 
-      {/* Label below the pin */}
-      <div className="flex flex-col items-center mt-0.5">
-        <span className="text-[9px] font-semibold text-white/60 tracking-[0.04em]">
-          You Are Here
-        </span>
-        <span className="text-[7px] text-white/20 font-mono tabular-nums">
-          {dateStr}
-        </span>
-      </div>
+      {/* Main text */}
+      <h3 className="text-[24px] md:text-[28px] font-extralight text-white/85 tracking-[0.15em] uppercase">
+        You Are Here
+      </h3>
+
+      {/* Date */}
+      <span className="text-[10px] font-mono text-white/25 tabular-nums">
+        {dateStr}
+      </span>
+
+      {/* Tagline */}
+      <motion.p
+        className="text-[12px] text-white/20 font-light italic mt-1"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.4, duration: 0.6 }}
+      >
+        13.8 billion years later
+      </motion.p>
     </motion.div>
   )
 }

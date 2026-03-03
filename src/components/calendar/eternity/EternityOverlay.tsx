@@ -42,18 +42,16 @@ export function EternityOverlay({ open, onClose }: EternityOverlayProps) {
       {open && (
         <motion.div
           className="fixed inset-0 z-[100] flex items-center justify-center"
-          style={{ touchAction: 'none' }}
+          style={{ touchAction: 'pan-x' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4 }}
         >
-          {/* Background */}
+          {/* Background — solid dark base; EternityTimeline manages its own dynamic gradient */}
           <motion.div
             className="absolute inset-0"
-            style={{
-              background: 'radial-gradient(ellipse at 50% 50%, #0a0a1a 0%, #050510 70%)',
-            }}
+            style={{ background: '#050510' }}
             initial={{ scale: 1.02 }}
             animate={{ scale: 1 }}
             exit={{ scale: 1.02 }}
@@ -71,19 +69,6 @@ export function EternityOverlay({ open, onClose }: EternityOverlayProps) {
           >
             <X size={20} strokeWidth={1.5} />
           </button>
-
-          {/* Title — top center */}
-          <motion.div
-            className="absolute left-0 right-0 text-center z-10"
-            style={{ top: 'max(1.5rem, env(safe-area-inset-top, 1.5rem))' }}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-          >
-            <h2 className="text-[13px] font-semibold text-white/30 uppercase tracking-[0.2em]">
-              The Timeline of Everything
-            </h2>
-          </motion.div>
 
           {/* Timeline */}
           <div className="relative w-full h-full z-[1]">

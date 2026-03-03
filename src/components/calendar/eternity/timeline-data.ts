@@ -1,7 +1,7 @@
 /**
  * Eternity timeline — era definitions from the Big Bang to the present.
- * Each era has a color palette, sub-events for drill-down, and positioning
- * computed via a logarithmic scale.
+ * Each era has a color palette, sub-events for drill-down, and width
+ * computed via square-root scaling for proportional horizontal scrolling.
  */
 
 export interface SubEvent {
@@ -228,35 +228,6 @@ export const ERAS: Era[] = [
 /** Maximum yearsAgo value — used as the log base for positioning. */
 export const MAX_YEARS = 13_800_000_000
 
-/** Pixel-width thresholds that control what detail appears at each zoom level. */
-export const ZOOM_THRESHOLDS = {
-  MARKERS_PX: 60,
-  LABELS_PX: 150,
-  FULL_PX: 300,
-  HORIZONTAL_TEXT_PX: 80,
-} as const
-
-export type DetailLevel = 'overview' | 'markers' | 'labels' | 'full'
-
-/** Compute the pixel width of each era given a total container width. */
-export function getEraPixelWidths(containerWidth: number): number[] {
-  const flexWidths = getEraWidths()
-  const totalFlex = flexWidths.reduce((a, b) => a + b, 0)
-  return flexWidths.map(f => (f / totalFlex) * containerWidth)
-}
-
-/**
- * Convert yearsAgo → a 0-1 position using logarithmic scale.
- * 0 = Big Bang (left), 1 = Now (right).
- */
-export function getEraPosition(yearsAgo: number): number {
-  if (yearsAgo <= 0) return 1
-  if (yearsAgo >= MAX_YEARS) return 0
-  const logMax = Math.log10(MAX_YEARS)
-  const logVal = Math.log10(yearsAgo)
-  return 1 - logVal / logMax
-}
-
 /**
  * Format a large number for display (e.g., 13_800_000_000 → "13.8B").
  */
@@ -267,23 +238,47 @@ export function formatYearsAgo(years: number): string {
   return `${years}`
 }
 
+// ---------- Horizontal scroll layout ----------
+
+export interface EonLayout {
+  era: Era
+  width: number      // pixel width of this section
+  startX: number     // cumulative pixel offset from left edge
+}
+
 /**
- * Compute proportional column widths based on actual time spans.
- * This makes the stunning insignificance of recent eras obvious —
- * the Big Bang through early Earth dominate the view, while all of
- * human history is a barely-visible sliver at the end.
- * A tiny minimum is enforced so every column stays clickable.
+ * Square-root scaling for section widths.
+ * Each section gets a minimum of MIN_WIDTH pixels, plus a proportional
+ * bonus based on the square root of its duration. This creates a timeline
+ * where early universe eons take much longer to scroll through, but even
+ * the briefest modern eras are still meaningful stops.
+ *
+ * Total width ≈ 15,000px (about 15 iPad viewports).
  */
-export function getEraWidths(): number[] {
-  const MIN_FLEX = 0.15
+const MIN_SECTION_WIDTH = 500
+const VARIABLE_WIDTH = 8500
 
-  const rawSpans: number[] = []
-  for (let i = 0; i < ERAS.length; i++) {
+export function computeEonWidths(): EonLayout[] {
+  // Duration = span from this era's start to the next era's start (or to 0 for last)
+  const durations = ERAS.map((era, i) => {
     const endYears = i < ERAS.length - 1 ? ERAS[i + 1].yearsAgo : 0
-    rawSpans.push(ERAS[i].yearsAgo - endYears)
-  }
+    return Math.max(era.yearsAgo - endYears, 1)
+  })
 
-  // Normalize so the largest span = 10 flex units
-  const maxSpan = Math.max(...rawSpans)
-  return rawSpans.map(span => Math.max((span / maxSpan) * 10, MIN_FLEX))
+  const sqrtDurations = durations.map(d => Math.sqrt(d))
+  const totalSqrt = sqrtDurations.reduce((a, b) => a + b, 0)
+
+  let cumulativeX = 0
+  return ERAS.map((era, i) => {
+    const width = Math.round(MIN_SECTION_WIDTH + (sqrtDurations[i] / totalSqrt) * VARIABLE_WIDTH)
+    const layout: EonLayout = { era, width, startX: cumulativeX }
+    cumulativeX += width
+    return layout
+  })
+}
+
+export function getTotalTimelineWidth(): number {
+  const layouts = computeEonWidths()
+  const last = layouts[layouts.length - 1]
+  return last.startX + last.width
 }
