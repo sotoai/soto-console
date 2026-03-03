@@ -56,6 +56,23 @@
 
   --backdrop-blur: 20px;
 
+  /* ---- Responsive shell tokens (iPad landscape / desktop defaults) ---- */
+  --shell-padding-x: 2rem;
+  --shell-padding-top: 2rem;
+  --shell-gap: 1.5rem;
+  --status-bar-h: 44px;
+  --dock-icon-size: 48px;
+  --dock-gap: 1.25rem;
+  --dock-padding-x: 1.5rem;
+  --dock-padding-y: 0.75rem;
+  --dock-label-size: 10px;
+  --calendar-height: 420px;
+  --upcoming-max-h: 380px;
+  --page-dot-size: 7px;
+  --segment-font: 12px;
+  --segment-px: 0.875rem;
+  --segment-py: 0.375rem;
+
   --wallpaper-overlay: rgba(255, 255, 255, 0.08);
   --wallpaper-card-bg: rgba(255, 255, 255, 0.55);
   --wallpaper-card-border: rgba(255, 255, 255, 0.6);
@@ -134,6 +151,87 @@
   --wp-shadow-strong: 0 1px 8px rgba(0, 0, 0, 0.3);
 }
 
+/* ---- Responsive Overrides ---- */
+
+/* Mobile portrait (< 640px) */
+@media (max-width: 639px) and (orientation: portrait) {
+  :root, :root[data-theme="dark"] {
+    --shell-padding-x: 1rem;
+    --shell-padding-top: 0.75rem;
+    --shell-gap: 0.75rem;
+    --dock-icon-size: 52px;
+    --dock-gap: 1rem;
+    --dock-padding-x: 1.25rem;
+    --dock-padding-y: 0.625rem;
+    --calendar-height: 280px;
+    --upcoming-max-h: 200px;
+    --page-dot-size: 8px;
+    --segment-font: 13px;
+    --segment-px: 0.75rem;
+    --segment-py: 0.5rem;
+  }
+}
+
+/* Mobile landscape (narrow height) */
+@media (max-width: 900px) and (orientation: landscape) {
+  :root, :root[data-theme="dark"] {
+    --shell-padding-x: 1.5rem;
+    --shell-padding-top: 0.5rem;
+    --shell-gap: 0.75rem;
+    --status-bar-h: 32px;
+    --dock-icon-size: 40px;
+    --dock-gap: 0.75rem;
+    --dock-padding-x: 1rem;
+    --dock-padding-y: 0.375rem;
+    --dock-label-size: 0px;
+    --calendar-height: 220px;
+    --upcoming-max-h: 180px;
+    --page-dot-size: 6px;
+    --segment-font: 11px;
+    --segment-px: 0.625rem;
+    --segment-py: 0.375rem;
+  }
+}
+
+/* iPad portrait */
+@media (min-width: 640px) and (max-width: 1023px) and (orientation: portrait) {
+  :root, :root[data-theme="dark"] {
+    --shell-padding-x: 1.5rem;
+    --shell-padding-top: 1.5rem;
+    --shell-gap: 1.25rem;
+    --dock-icon-size: 52px;
+    --calendar-height: 380px;
+    --upcoming-max-h: 340px;
+  }
+}
+
+/* ---- Touch-First Base Styles ---- */
+
+/* Prevent double-tap zoom on interactive elements */
+button, a, input, select, textarea {
+  touch-action: manipulation;
+}
+
+/* Disable hover effects on touch devices to prevent sticky hover */
+@media (hover: hover) {
+  .card-surface:hover {
+    background: var(--bg-secondary);
+  }
+  .glass-hover:hover {
+    background: var(--bg-glass-hover);
+  }
+}
+
+/* Remove default hover for touch-only devices */
+@media (hover: none) {
+  .card-surface:hover {
+    background: var(--bg-elevated);
+  }
+  .glass-hover:hover {
+    background: var(--bg-glass);
+  }
+}
+
 /* ---- Base Styles ---- */
 @layer base {
   * {
@@ -154,7 +252,10 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.35s ease, color 0.35s ease;
-  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* ---- Utility Classes ---- */
@@ -172,10 +273,6 @@ body {
   background: var(--bg-elevated);
   border-radius: var(--radius-lg);
   transition: background-color 0.25s ease;
-}
-
-.card-surface:hover {
-  background: var(--bg-secondary);
 }
 
 .card-interactive {

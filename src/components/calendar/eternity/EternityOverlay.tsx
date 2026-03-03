@@ -63,14 +63,19 @@ export function EternityOverlay({ open, onClose }: EternityOverlayProps) {
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-6 right-6 z-10 p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/80 transition-all duration-200 cursor-pointer"
+            className="absolute z-10 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/5 active:bg-white/10 text-white/40 active:text-white/80 transition-all duration-200 cursor-pointer"
+            style={{
+              top: 'max(1rem, env(safe-area-inset-top, 1rem))',
+              right: 'max(1rem, env(safe-area-inset-right, 1rem))',
+            }}
           >
             <X size={20} strokeWidth={1.5} />
           </button>
 
           {/* Title — top center */}
           <motion.div
-            className="absolute top-6 left-0 right-0 text-center z-10"
+            className="absolute left-0 right-0 text-center z-10"
+            style={{ top: 'max(1.5rem, env(safe-area-inset-top, 1.5rem))' }}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}

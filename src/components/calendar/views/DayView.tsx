@@ -61,15 +61,15 @@ export function DayView({ events = [] }: DayViewProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Date header */}
-      <div className="space-y-1 mb-4">
-        <p className="text-[22px] font-bold text-[var(--wp-text)] tracking-[-0.02em]" style={{ textShadow: 'var(--wp-shadow-strong)' }}>
+      <div className="space-y-1 mb-3 md:mb-4">
+        <p className="text-[18px] md:text-[22px] font-bold text-[var(--wp-text)] tracking-[-0.02em]" style={{ textShadow: 'var(--wp-shadow-strong)' }}>
           {dayName}
         </p>
-        <div className="flex items-baseline gap-3">
-          <p className="text-[14px] text-[var(--wp-text-secondary)]" style={{ textShadow: 'var(--wp-shadow)' }}>
+        <div className="flex items-baseline gap-2 md:gap-3">
+          <p className="text-[13px] md:text-[14px] text-[var(--wp-text-secondary)]" style={{ textShadow: 'var(--wp-shadow)' }}>
             {monthDay}
           </p>
-          <span className="text-[12px] text-[var(--wp-text-tertiary)] font-mono tabular-nums">
+          <span className="text-[11px] md:text-[12px] text-[var(--wp-text-tertiary)] font-mono tabular-nums">
             Day {dayNum} of {totalDays}
           </span>
         </div>
@@ -81,7 +81,7 @@ export function DayView({ events = [] }: DayViewProps) {
         <div className="absolute inset-0 flex flex-col justify-between py-1">
           {hours.filter((_, i) => i % 2 === 0).map(hour => (
             <div key={hour} className="flex items-center gap-3">
-              <span className="text-[10px] font-mono text-[var(--wp-text-tertiary)] w-[42px] text-right tabular-nums">
+              <span className="text-[10px] font-mono text-[var(--wp-text-tertiary)] w-[36px] md:w-[42px] text-right tabular-nums">
                 {formatHour(hour)}
               </span>
               <div className="flex-1 h-px bg-[var(--wp-line)]" />
@@ -95,7 +95,7 @@ export function DayView({ events = [] }: DayViewProps) {
           return (
             <div
               key={event.id}
-              className="absolute left-[54px] right-2 rounded-md overflow-hidden"
+              className="absolute left-[46px] md:left-[54px] right-2 rounded-md overflow-hidden"
               style={{
                 top: pos.top,
                 height: pos.height,
@@ -123,7 +123,7 @@ export function DayView({ events = [] }: DayViewProps) {
         {/* Current time indicator — on top of events */}
         {timePercent > 0 && timePercent < 100 && (
           <div
-            className="absolute left-[54px] right-0 flex items-center z-10"
+            className="absolute left-[46px] md:left-[54px] right-0 flex items-center z-10"
             style={{ top: `${timePercent}%` }}
           >
             <div className="w-2 h-2 rounded-full bg-[var(--accent)] shadow-[0_0_8px_rgba(0,122,255,0.5)]" />

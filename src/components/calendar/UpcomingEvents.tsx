@@ -66,7 +66,7 @@ export function UpcomingEvents({ className, style, events = MOCK_EVENTS }: Upcom
         Upcoming
       </h3>
 
-      <div className="space-y-5 overflow-y-auto max-h-[380px] pr-1">
+      <div className="space-y-5 overflow-y-auto pr-1" style={{ maxHeight: 'var(--upcoming-max-h)' }}>
         {grouped.length === 0 ? (
           <p className="text-[13px] text-[var(--wp-text-muted)]">No upcoming events</p>
         ) : (
@@ -77,7 +77,7 @@ export function UpcomingEvents({ className, style, events = MOCK_EVENTS }: Upcom
               </p>
               <div className="space-y-1.5">
                 {dayEvents.map(event => (
-                  <div key={event.id} className="flex items-start gap-2.5 py-1.5">
+                  <div key={event.id} className="flex items-start gap-2.5 py-2.5 min-h-[44px]">
                     {/* Color dot */}
                     <div
                       className="w-2 h-2 rounded-full mt-1.5 shrink-0"

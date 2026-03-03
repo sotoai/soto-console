@@ -33,11 +33,11 @@ export function WeekView({ events = [] }: WeekViewProps) {
         {monthYear}
       </p>
 
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1 md:gap-2">
         {/* Day name headers */}
         {DAY_NAMES.map(name => (
           <div key={name} className="text-center">
-            <span className="text-[10px] font-medium text-[var(--wp-text-tertiary)] uppercase tracking-wider">
+            <span className="text-[9px] md:text-[10px] font-medium text-[var(--wp-text-tertiary)] uppercase tracking-wider">
               {name}
             </span>
           </div>
@@ -50,43 +50,56 @@ export function WeekView({ events = [] }: WeekViewProps) {
           const overflow = dayEvents.length - MAX_VISIBLE
 
           return (
-            <div key={i} className="flex flex-col items-center pt-2 gap-1.5">
+            <div key={i} className="flex flex-col items-center pt-1.5 md:pt-2 gap-1 md:gap-1.5">
               {/* Date circle */}
               <div
-                className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
+                className={`w-7 h-7 md:w-9 md:h-9 flex items-center justify-center rounded-full transition-colors ${
                   today_
                     ? 'bg-[var(--accent)] text-white'
                     : 'text-[var(--wp-text-secondary)]'
                 }`}
               >
-                <span className={`text-[15px] tabular-nums ${today_ ? 'font-bold' : 'font-medium'}`}>
+                <span className={`text-[13px] md:text-[15px] tabular-nums ${today_ ? 'font-bold' : 'font-medium'}`}>
                   {date.getDate()}
                 </span>
               </div>
 
-              {/* Event pills */}
+              {/* Event pills — hidden on mobile, show dots instead */}
               {dayEvents.length > 0 && (
-                <div className="w-full space-y-0.5">
-                  {dayEvents.slice(0, MAX_VISIBLE).map(event => (
-                    <div
-                      key={event.id}
-                      className="rounded-sm px-1 py-px truncate"
-                      style={{
-                        backgroundColor: `${event.color || '#007AFF'}35`,
-                        borderLeft: `2px solid ${event.color || '#007AFF'}`,
-                      }}
-                    >
-                      <span className="text-[8px] font-medium text-[var(--wp-text-secondary)] truncate block leading-tight">
-                        {event.title}
+                <>
+                  {/* Mobile: colored dots */}
+                  <div className="flex gap-0.5 md:hidden">
+                    {dayEvents.slice(0, 3).map(event => (
+                      <div
+                        key={event.id}
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ backgroundColor: event.color || '#007AFF' }}
+                      />
+                    ))}
+                  </div>
+                  {/* Tablet+: event pills */}
+                  <div className="w-full space-y-0.5 hidden md:block">
+                    {dayEvents.slice(0, MAX_VISIBLE).map(event => (
+                      <div
+                        key={event.id}
+                        className="rounded-sm px-1 py-px truncate"
+                        style={{
+                          backgroundColor: `${event.color || '#007AFF'}35`,
+                          borderLeft: `2px solid ${event.color || '#007AFF'}`,
+                        }}
+                      >
+                        <span className="text-[8px] font-medium text-[var(--wp-text-secondary)] truncate block leading-tight">
+                          {event.title}
+                        </span>
+                      </div>
+                    ))}
+                    {overflow > 0 && (
+                      <span className="text-[8px] text-[var(--wp-text-tertiary)] text-center block">
+                        +{overflow} more
                       </span>
-                    </div>
-                  ))}
-                  {overflow > 0 && (
-                    <span className="text-[8px] text-[var(--wp-text-tertiary)] text-center block">
-                      +{overflow} more
-                    </span>
-                  )}
-                </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           )

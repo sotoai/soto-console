@@ -24,8 +24,8 @@ export function MonthView({ events }: MonthViewProps) {
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-px">
         {DAY_NAMES.map(name => (
-          <div key={name} className="text-center pb-2">
-            <span className="text-[10px] font-medium text-[var(--wp-text-tertiary)] uppercase tracking-wider">
+          <div key={name} className="text-center pb-1 md:pb-2">
+            <span className="text-[9px] md:text-[10px] font-medium text-[var(--wp-text-tertiary)] uppercase tracking-wider">
               {name}
             </span>
           </div>
@@ -36,21 +36,21 @@ export function MonthView({ events }: MonthViewProps) {
       <div className="grid grid-cols-7 gap-px">
         {grid.flat().map((date, i) => {
           if (!date) {
-            return <div key={`empty-${i}`} className="h-8" />
+            return <div key={`empty-${i}`} className="h-6 md:h-8" />
           }
 
           const today_ = isToday(date)
 
           return (
-            <div key={i} className="flex justify-center items-center h-8">
+            <div key={i} className="flex justify-center items-center h-6 md:h-8">
               <div
-                className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${
+                className={`w-5 h-5 md:w-7 md:h-7 flex items-center justify-center rounded-full transition-colors ${
                   today_
                     ? 'bg-[var(--accent)] text-white'
                     : 'text-[var(--wp-text-secondary)]'
                 }`}
               >
-                <span className={`text-[12px] tabular-nums ${today_ ? 'font-bold' : ''}`}>
+                <span className={`text-[11px] md:text-[12px] tabular-nums ${today_ ? 'font-bold' : ''}`}>
                   {date.getDate()}
                 </span>
               </div>

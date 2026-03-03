@@ -40,34 +40,39 @@ export function StatusBar() {
   return (
     <header
       className={cn(
-        'h-[44px] flex items-center justify-between px-6 relative z-30 transition-colors duration-300',
+        'flex items-center justify-between relative z-30 shrink-0 transition-colors duration-300',
         isHome
           ? 'bg-[var(--wallpaper-bar-bg)]'
           : 'bg-[var(--bg-primary)]'
       )}
-      style={isHome
-        ? { backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)' }
-        : { borderBottom: '0.5px solid var(--border-strong)' }
-      }
+      style={{
+        height: 'var(--status-bar-h)',
+        paddingLeft: 'var(--shell-padding-x)',
+        paddingRight: 'var(--shell-padding-x)',
+        ...(isHome
+          ? { backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)' }
+          : { borderBottom: '0.5px solid var(--border-strong)' }
+        ),
+      }}
     >
       {/* Left: Home button (hidden on home screen) */}
-      <div className="w-[100px]">
+      <div className="flex-1 min-w-0">
         {!isHome && (
           <button
             onClick={() => router.push('/')}
-            className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] text-[15px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all duration-200 active:scale-95 cursor-pointer"
+            className="flex items-center gap-2 px-3 min-h-[44px] rounded-[var(--radius-sm)] text-[14px] md:text-[15px] font-medium text-[var(--text-secondary)] active:text-[var(--text-primary)] active:bg-[var(--bg-tertiary)] transition-all duration-200 active:scale-95 cursor-pointer"
           >
             <Home size={16} strokeWidth={1.5} />
-            <span>Home</span>
+            <span className="hidden sm:inline">Home</span>
           </button>
         )}
       </div>
 
       {/* Center: Clock + Date */}
-      <div className="flex items-center gap-3 select-none">
+      <div className="flex items-center gap-2 md:gap-3 select-none">
         <span
           className={cn(
-            'text-[17px] font-bold tracking-[-0.02em]',
+            'text-[15px] md:text-[17px] font-bold tracking-[-0.02em]',
             isHome ? 'text-[var(--wp-text)]' : 'text-[var(--text-primary)]'
           )}
           style={isHome ? { textShadow: 'var(--wp-shadow-strong)' } : undefined}
@@ -76,7 +81,7 @@ export function StatusBar() {
         </span>
         <span
           className={cn(
-            'text-[13px]',
+            'text-[11px] md:text-[13px] hidden sm:inline',
             isHome ? 'text-[var(--wp-text-secondary)]' : 'text-[var(--text-secondary)]'
           )}
           style={isHome ? { textShadow: 'var(--wp-shadow)' } : undefined}
@@ -86,7 +91,7 @@ export function StatusBar() {
       </div>
 
       {/* Right: Theme toggle */}
-      <div className="w-[100px] flex justify-end">
+      <div className="flex-1 min-w-0 flex justify-end">
         <ThemeToggle />
       </div>
     </header>

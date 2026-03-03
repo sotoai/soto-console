@@ -73,12 +73,17 @@ export function ThemeToggle() {
 
   const isDark = theme === 'dark'
 
-  // Placeholder while hydrating — matches final toggle size
+  // Placeholder while hydrating — matches final toggle size with 44px touch target
   if (!mounted) {
-    return <div className="w-[52px] h-[26px] rounded-full bg-white/10" />
+    return (
+      <div className="flex items-center justify-center min-w-[44px] min-h-[44px]">
+        <div className="w-[52px] h-[26px] rounded-full bg-white/10" />
+      </div>
+    )
   }
 
   return (
+    <div className="flex items-center justify-center min-w-[44px] min-h-[44px]">
     <button
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       className="relative w-[52px] h-[26px] rounded-full overflow-hidden cursor-pointer shrink-0 border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 active:scale-95 transition-transform duration-150"
@@ -135,5 +140,6 @@ export function ThemeToggle() {
         </div>
       </motion.div>
     </button>
+    </div>
   )
 }

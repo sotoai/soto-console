@@ -17,7 +17,7 @@ export function SwipeablePages({ children, currentPage, onPageChange }: Swipeabl
   useEffect(() => {
     const updateWidth = () => setPageWidth(window.innerWidth)
     updateWidth()
-    window.addEventListener('resize', updateWidth)
+    window.addEventListener('resize', updateWidth, { passive: true })
     return () => window.removeEventListener('resize', updateWidth)
   }, [])
 
@@ -34,12 +34,13 @@ export function SwipeablePages({ children, currentPage, onPageChange }: Swipeabl
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const offset = info.offset.x
     const velocity = info.velocity.x
-    const threshold = pageWidth * 0.15
+    // Touch-friendly: shorter distance threshold (10%), lower velocity threshold (300)
+    const threshold = pageWidth * 0.1
 
     let newPage = currentPage
-    if (offset < -threshold || velocity < -500) {
+    if (offset < -threshold || velocity < -300) {
       newPage = Math.min(currentPage + 1, children.length - 1)
-    } else if (offset > threshold || velocity > 500) {
+    } else if (offset > threshold || velocity > 300) {
       newPage = Math.max(currentPage - 1, 0)
     }
 
@@ -57,7 +58,7 @@ export function SwipeablePages({ children, currentPage, onPageChange }: Swipeabl
     <div ref={containerRef} className="w-full h-full overflow-hidden">
       <motion.div
         className="flex h-full"
-        style={{ x, width: children.length * pageWidth }}
+        style={{ x, width: children.length * pageWidth, touchAction: 'pan-y pinch-zoom' }}
         drag="x"
         dragConstraints={{
           left: -(children.length - 1) * pageWidth,

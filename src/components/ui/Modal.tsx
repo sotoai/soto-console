@@ -13,9 +13,9 @@ interface ModalProps {
 }
 
 const widthMap = {
-  sm: 'max-w-md',
-  md: 'max-w-lg',
-  lg: 'max-w-2xl',
+  sm: 'max-w-[calc(100%-2rem)] md:max-w-md',
+  md: 'max-w-[calc(100%-2rem)] md:max-w-lg',
+  lg: 'max-w-[calc(100%-2rem)] md:max-w-2xl',
 }
 
 export function Modal({ open, onClose, title, children, width = 'md' }: ModalProps) {
@@ -60,7 +60,7 @@ export function Modal({ open, onClose, title, children, width = 'md' }: ModalPro
               <h2 className="text-[17px] font-bold text-[var(--text-primary)]">{title}</h2>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-[var(--radius-sm)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors cursor-pointer"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-muted)] active:text-[var(--text-primary)] active:bg-[var(--bg-tertiary)] transition-colors cursor-pointer"
               >
                 <X size={18} strokeWidth={1.5} />
               </button>

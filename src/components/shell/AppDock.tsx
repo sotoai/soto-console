@@ -9,8 +9,10 @@ export function AppDock() {
   return (
     <div className="flex justify-center">
       <div
-        className="inline-flex items-center gap-5 px-6 py-3 rounded-[var(--radius-xl)]"
+        className="inline-flex items-center rounded-[var(--radius-xl)]"
         style={{
+          gap: 'var(--dock-gap)',
+          padding: `var(--dock-padding-y) var(--dock-padding-x)`,
           background: 'var(--wallpaper-bar-bg)',
           border: '0.5px solid var(--wallpaper-card-border)',
           backdropFilter: 'blur(40px) saturate(180%)',
@@ -22,18 +24,29 @@ export function AppDock() {
           <Link
             key={app.id}
             href={app.basePath}
-            className="flex flex-col items-center gap-1.5 group"
+            className="flex flex-col items-center gap-1 group"
           >
             {/* App icon */}
             <div
-              className={`w-12 h-12 rounded-[var(--radius-md)] bg-gradient-to-br ${app.gradient} flex items-center justify-center group-hover:scale-110 group-active:scale-95 transition-transform duration-200 shadow-md`}
+              className={`rounded-[var(--radius-md)] bg-gradient-to-br ${app.gradient} flex items-center justify-center group-active:scale-95 transition-transform duration-200 shadow-md`}
+              style={{ width: 'var(--dock-icon-size)', height: 'var(--dock-icon-size)' }}
             >
-              <app.icon size={22} className="text-white" strokeWidth={1.5} />
+              <app.icon
+                className="text-white"
+                strokeWidth={1.5}
+                style={{
+                  width: 'calc(var(--dock-icon-size) * 0.46)',
+                  height: 'calc(var(--dock-icon-size) * 0.46)',
+                }}
+              />
             </div>
-            {/* App name */}
+            {/* App name — hidden in mobile landscape via --dock-label-size: 0px */}
             <span
-              className="text-[10px] font-medium text-[var(--wp-text-secondary)]"
-              style={{ textShadow: 'var(--wp-shadow)' }}
+              className="font-medium text-[var(--wp-text-secondary)] leading-tight"
+              style={{
+                fontSize: 'var(--dock-label-size)',
+                textShadow: 'var(--wp-shadow)',
+              }}
             >
               {app.name}
             </span>

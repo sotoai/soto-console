@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Providers } from '@/components/Providers'
 import { StatusBar } from '@/components/shell/StatusBar'
 import './globals.css'
@@ -6,6 +6,19 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'HomeBase',
   description: 'Your household command center.',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'HomeBase',
+  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -13,7 +26,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body>
         <Providers>
-          <div className="h-screen relative z-10 flex flex-col overflow-hidden">
+          <div
+            className="h-[100dvh] relative z-10 flex flex-col overflow-hidden"
+            style={{
+              paddingTop: 'env(safe-area-inset-top, 0px)',
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+            }}
+          >
             <StatusBar />
             <main className="flex-1 min-h-0">
               {children}
