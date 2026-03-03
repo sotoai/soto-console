@@ -68,10 +68,17 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
   const dirRef = useRef<Direction>(initialState?.direction ?? NOODLER.INITIAL_DIRECTION)
   const nextDirRef = useRef<Direction>(initialState?.direction ?? NOODLER.INITIAL_DIRECTION)
   const speedRef = useRef(initialState?.speed ?? NOODLER.INITIAL_SPEED)
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const sizeRef = useRef({ width: 0, height: 0 })
 
-  // Reactive state (for UI)
+  // rAF-based game loop refs
+  const rafRef = useRef<number | null>(null)
+  const lastTickTimeRef = useRef(0)
+  const dirChangedRef = useRef(false)
+  const gameStateRef = useRef<'idle' | 'playing' | 'paused' | 'gameover'>(
+    initialState ? 'paused' : 'idle'
+  )
+
+  // Reactive state (for UI only — game loop reads refs, not these)
   const [gameState, setGameState] = useState<'idle' | 'playing' | 'paused' | 'gameover'>(
     initialState ? 'paused' : 'idle'
   )
@@ -80,17 +87,25 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
 
   const scoreRef = useRef(initialState?.score ?? 0)
 
+  // Sync both reactive state and mutable ref
+  const updateGameState = useCallback((state: 'idle' | 'playing' | 'paused' | 'gameover') => {
+    gameStateRef.current = state
+    setGameState(state)
+  }, [])
+
   // ---------- Canvas rendering ----------
 
-  const render = useCallback((width: number, height: number) => {
-    sizeRef.current = { width, height }
+  const renderCanvas = useCallback((width: number, height: number) => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas || width <= 0 || height <= 0) return
 
     const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
-    if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
-      canvas.width = Math.round(width * dpr)
-      canvas.height = Math.round(height * dpr)
+    const roundedW = Math.round(width * dpr)
+    const roundedH = Math.round(height * dpr)
+
+    if (canvas.width !== roundedW || canvas.height !== roundedH) {
+      canvas.width = roundedW
+      canvas.height = roundedH
       canvas.style.width = `${width}px`
       canvas.style.height = `${height}px`
     }
@@ -127,7 +142,7 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
       ctx.stroke()
     }
 
-    // Food (pulsing)
+    // Food (pulsing — smooth at 60fps thanks to rAF)
     const food = foodRef.current
     const pulse = 0.85 + Math.sin(Date.now() / 200) * 0.15
     ctx.fillStyle = NOODLER.FOOD_COLOR
@@ -176,9 +191,15 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
     ctx.restore()
   }, [])
 
-  // ---------- Game tick ----------
+  // Public render (stores size + draws)
+  const render = useCallback((width: number, height: number) => {
+    sizeRef.current = { width, height }
+    renderCanvas(width, height)
+  }, [renderCanvas])
 
-  const tick = useCallback(() => {
+  // ---------- Game logic tick ----------
+
+  const doTick = useCallback(() => {
     const snake = snakeRef.current
     const dir = nextDirRef.current
 
@@ -194,12 +215,12 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
       y: head.y + (d === 'down' ? 1 : d === 'up' ? -1 : 0),
     }
 
-    // Wall collision
+    // Wall collision → gameover (rAF loop stops automatically via gameStateRef check)
     if (
       newHead.x < 0 || newHead.x >= NOODLER.GRID_COLS ||
       newHead.y < 0 || newHead.y >= NOODLER.GRID_ROWS
     ) {
-      setGameState('gameover')
+      updateGameState('gameover')
       const finalScore = scoreRef.current
       if (finalScore > getStoredHighScore()) {
         setStoredHighScore(finalScore)
@@ -208,9 +229,9 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
       return
     }
 
-    // Self collision
+    // Self collision → gameover
     if (snake.some(s => s.x === newHead.x && s.y === newHead.y)) {
-      setGameState('gameover')
+      updateGameState('gameover')
       const finalScore = scoreRef.current
       if (finalScore > getStoredHighScore()) {
         setStoredHighScore(finalScore)
@@ -231,30 +252,60 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
       setScore(scoreRef.current)
       foodRef.current = randomFood(newSnake)
       speedRef.current = Math.max(NOODLER.MIN_SPEED, speedRef.current - NOODLER.SPEED_INCREMENT)
-      // Restart interval at new speed
-      if (tickRef.current) clearInterval(tickRef.current)
-      tickRef.current = setInterval(tick, speedRef.current)
     }
 
     snakeRef.current = newSnake
+  }, [updateGameState])
 
-    // Render
-    render(sizeRef.current.width, sizeRef.current.height)
-  }, [render])
+  // ---------- rAF game loop ----------
 
-  // ---------- Controls ----------
-
-  const clearTick = useCallback(() => {
-    if (tickRef.current) {
-      clearInterval(tickRef.current)
-      tickRef.current = null
+  const stopLoop = useCallback(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
     }
   }, [])
 
-  const startTick = useCallback(() => {
-    clearTick()
-    tickRef.current = setInterval(tick, speedRef.current)
-  }, [tick, clearTick])
+  const gameLoop = useCallback((timestamp: number) => {
+    // If no longer playing, render one final frame and exit
+    if (gameStateRef.current !== 'playing') {
+      renderCanvas(sizeRef.current.width, sizeRef.current.height)
+      rafRef.current = null
+      return
+    }
+
+    const elapsed = timestamp - lastTickTimeRef.current
+    const speed = speedRef.current
+
+    // Early tick if direction changed and ≥30% of interval elapsed
+    // This makes swipe/key input feel near-instant (~45ms worst case at 150ms speed)
+    const earlyTick = dirChangedRef.current && elapsed >= speed * 0.3
+
+    if (elapsed >= speed || earlyTick) {
+      lastTickTimeRef.current = timestamp
+      dirChangedRef.current = false
+      doTick()
+    }
+
+    // Render every frame — smooth 60fps food pulsing + immediate visual updates
+    renderCanvas(sizeRef.current.width, sizeRef.current.height)
+
+    // Continue loop only if still playing (doTick may have set gameover)
+    if (gameStateRef.current === 'playing') {
+      rafRef.current = requestAnimationFrame(gameLoop)
+    } else {
+      // Final render already done above, just stop
+      rafRef.current = null
+    }
+  }, [doTick, renderCanvas])
+
+  const startLoop = useCallback(() => {
+    stopLoop()
+    lastTickTimeRef.current = performance.now()
+    rafRef.current = requestAnimationFrame(gameLoop)
+  }, [stopLoop, gameLoop])
+
+  // ---------- Controls ----------
 
   const start = useCallback(() => {
     snakeRef.current = initialSnake()
@@ -264,29 +315,30 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
     speedRef.current = NOODLER.INITIAL_SPEED
     scoreRef.current = 0
     setScore(0)
-    setGameState('playing')
-    startTick()
-  }, [startTick])
+    updateGameState('playing')
+    startLoop()
+  }, [startLoop, updateGameState])
 
   const pause = useCallback(() => {
-    clearTick()
-    setGameState('paused')
-  }, [clearTick])
+    stopLoop()
+    updateGameState('paused')
+  }, [stopLoop, updateGameState])
 
   const resume = useCallback(() => {
-    setGameState('playing')
-    startTick()
-  }, [startTick])
+    updateGameState('playing')
+    startLoop()
+  }, [startLoop, updateGameState])
 
   const restart = useCallback(() => {
-    clearTick()
+    stopLoop()
     start()
-  }, [clearTick, start])
+  }, [stopLoop, start])
 
   const setDirection = useCallback((dir: Direction) => {
-    // Prevent reversing
+    // Prevent reversing into yourself
     if (OPPOSITE_DIRECTION[dir] !== dirRef.current) {
       nextDirRef.current = dir
+      dirChangedRef.current = true  // signals rAF loop to tick early
     }
   }, [])
 
@@ -315,20 +367,22 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
 
       if (e.key === ' ') {
         e.preventDefault()
-        if (gameState === 'playing') pause()
-        else if (gameState === 'paused') resume()
-        else if (gameState === 'idle' || gameState === 'gameover') start()
+        // Read from ref so this handler never goes stale
+        const state = gameStateRef.current
+        if (state === 'playing') pause()
+        else if (state === 'paused') resume()
+        else if (state === 'idle' || state === 'gameover') start()
       }
     }
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [gameState, setDirection, pause, resume, start])
+  }, [setDirection, pause, resume, start])
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => clearTick()
-  }, [clearTick])
+    return () => stopLoop()
+  }, [stopLoop])
 
   return {
     canvasRef,
