@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, type CSSProperties } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft } from 'lucide-react'
-import { GameMenu } from './GameMenu'
+import { BentoGrid } from './BentoGrid'
 import { ArcadeOverlay } from './ArcadeOverlay'
 import { GAMES } from './games/registry'
 import type { NoodlerSnapshot } from './games/noodler/useNoodlerEngine'
@@ -23,6 +23,8 @@ export function ArcadePanel({ className, style }: ArcadePanelProps) {
     : null
 
   const handleSelectGame = useCallback((id: string) => {
+    const game = GAMES.find(g => g.id === id)
+    if (!game || game.comingSoon) return
     savedStateRef.current = undefined
     setSelectedGameId(id)
   }, [])
@@ -46,7 +48,7 @@ export function ArcadePanel({ className, style }: ArcadePanelProps) {
 
   // Render the game component with all needed props
   const renderGame = (fullscreen: boolean) => {
-    if (!selectedGame) return null
+    if (!selectedGame || !selectedGame.component) return null
     const GameComponent = selectedGame.component
     return (
       <GameComponent
@@ -97,7 +99,7 @@ export function ArcadePanel({ className, style }: ArcadePanelProps) {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               >
-                <GameMenu onSelectGame={handleSelectGame} />
+                <BentoGrid onSelectGame={handleSelectGame} />
               </motion.div>
             ) : (
               <motion.div

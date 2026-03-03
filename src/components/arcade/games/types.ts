@@ -3,6 +3,8 @@ import type { ComponentType } from 'react'
 
 export type GameState = 'idle' | 'playing' | 'paused' | 'gameover'
 
+export type TileSize = 'large' | 'medium' | 'small'
+
 export interface GameComponentProps {
   isFullscreen?: boolean
   onExpand?: () => void
@@ -20,5 +22,9 @@ export interface GameDefinition {
   icon: LucideIcon
   gradient: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  component: ComponentType<any>
+  component: ComponentType<any> | null
+  tileSize: TileSize
+  comingSoon?: boolean
+  emoji?: string
+  tagline?: string
 }
