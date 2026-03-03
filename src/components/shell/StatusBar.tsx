@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Home } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { UserAvatar } from './UserAvatar'
 import { cn } from '@/lib/utils'
 
 export function StatusBar() {
@@ -90,9 +91,10 @@ export function StatusBar() {
         </span>
       </div>
 
-      {/* Right: Theme toggle */}
-      <div className="flex-1 min-w-0 flex justify-end">
+      {/* Right: Theme toggle + User avatar */}
+      <div className="flex-1 min-w-0 flex items-center justify-end gap-1">
         <ThemeToggle />
+        <UserAvatar />
       </div>
     </header>
   )

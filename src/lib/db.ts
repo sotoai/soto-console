@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import path from 'path'
 import { apps } from './app-registry'
+import { initUserSchema } from './services/user-service'
 
 const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), 'homebase.db')
 
@@ -12,7 +13,10 @@ export function getDb(): Database.Database {
     db.pragma('journal_mode = WAL')
     db.pragma('foreign_keys = ON')
 
-    // Initialize schema for each registered app
+    // Core schema
+    initUserSchema(db)
+
+    // App-specific schemas
     for (const app of apps) {
       app.initSchema(db)
     }
