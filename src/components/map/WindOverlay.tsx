@@ -31,7 +31,7 @@ function getTrailFade(zoom: number): number {
 /** Particle opacity dims at high zoom */
 function getOpacityScale(zoom: number): number {
   if (zoom <= 5) return 1
-  return Math.max(0.3, 1 - (zoom - 5) * 0.1)
+  return Math.max(0.5, 1 - (zoom - 5) * 0.07)
 }
 
 interface Particle {
