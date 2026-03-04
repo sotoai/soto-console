@@ -34,7 +34,6 @@ interface PopupData {
 export function WorldMap({ className, style }: WorldMapProps) {
   const { resolvedTheme } = useTheme()
   const mapRef = useRef<MapRef>(null)
-  const cardRef = useRef<HTMLDivElement>(null)
 
   const [mounted, setMounted] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -57,13 +56,59 @@ export function WorldMap({ className, style }: WorldMapProps) {
     return () => document.removeEventListener('keydown', handleKey)
   }, [expanded])
 
-  // Tell MapLibre to resize after expand/collapse CSS change settles
+  // ── DOM reparenting for fullscreen ──
+  // The map container DOM node is moved between the in-flow card placeholder
+  // and a portal host div on document.body. This escapes all parent stacking
+  // contexts (transform from SwipeablePages, backdropFilter from glass card)
+  // so that fullscreen mode truly covers the entire viewport.
+  const portalHostRef = useRef<HTMLDivElement | null>(null)
+  const mapContainerRef = useRef<HTMLDivElement>(null)
+  const placeholderRef = useRef<HTMLDivElement>(null)
+
+  // Create a persistent portal host on document.body
   useEffect(() => {
     if (!mounted) return
-    const timer = setTimeout(() => {
+
+    if (!portalHostRef.current) {
+      const div = document.createElement('div')
+      div.id = 'map-fullscreen-host'
+      div.style.cssText =
+        'position:fixed;inset:0;z-index:9999;display:none;background:#000;'
+      document.body.appendChild(div)
+      portalHostRef.current = div
+    }
+
+    return () => {
+      if (portalHostRef.current) {
+        document.body.removeChild(portalHostRef.current)
+        portalHostRef.current = null
+      }
+    }
+  }, [mounted])
+
+  // Move the map container DOM node between card and portal host
+  useEffect(() => {
+    if (!mounted || !mapContainerRef.current || !portalHostRef.current || !placeholderRef.current)
+      return
+
+    const mapNode = mapContainerRef.current
+    const portalHost = portalHostRef.current
+    const placeholder = placeholderRef.current
+
+    if (expanded) {
+      portalHost.appendChild(mapNode)
+      portalHost.style.display = 'block'
+      document.body.style.overflow = 'hidden'
+    } else {
+      placeholder.appendChild(mapNode)
+      portalHost.style.display = 'none'
+      document.body.style.overflow = ''
+    }
+
+    // Trigger MapLibre resize after DOM move settles
+    setTimeout(() => {
       mapRef.current?.getMap()?.resize()
     }, 50)
-    return () => clearTimeout(timer)
   }, [expanded, mounted])
 
   // ── Layer toggle ──
@@ -155,195 +200,183 @@ export function WorldMap({ className, style }: WorldMapProps) {
           className="w-full h-full flex items-center justify-center"
           style={{ padding: 'var(--shell-padding-top) var(--shell-padding-x) 0.5rem' }}
         >
-          {/*
-            This is the single map container. It stays in the DOM always.
-            - Card mode: normal flow, rounded, clipped
-            - Expanded mode: fixed fullscreen via CSS
-          */}
+          {/* Glass card — always in card style, never goes fullscreen */}
           <div
-            ref={cardRef}
             className="animate-fade-in"
-            style={
-              expanded
-                ? {
-                    position: 'fixed',
-                    inset: 0,
-                    zIndex: 100,
-                    borderRadius: 0,
-                    paddingTop: 'env(safe-area-inset-top, 0px)',
-                    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-                  }
-                : {
-                    position: 'relative',
-                    width: '100%',
-                    maxWidth: '64rem',
-                    height: '100%',
-                    overflow: 'hidden',
-                    borderRadius: 'var(--radius-lg)',
-                    background: 'var(--wallpaper-card-bg)',
-                    border: '0.5px solid var(--wallpaper-card-border)',
-                    boxShadow: 'var(--wallpaper-card-shadow)',
-                    backdropFilter: 'blur(40px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                  }
-            }
+            style={{
+              position: 'relative',
+              width: '100%',
+              maxWidth: '64rem',
+              height: '100%',
+              overflow: 'hidden',
+              borderRadius: 'var(--radius-lg)',
+              background: 'var(--wallpaper-card-bg)',
+              border: '0.5px solid var(--wallpaper-card-border)',
+              boxShadow: 'var(--wallpaper-card-shadow)',
+              backdropFilter: 'blur(40px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+            }}
           >
-            {/* Map — single instance, never unmounted */}
-            <div className="w-full h-full relative">
-              {mounted && (
-                <Map
-                  ref={mapRef}
-                  mapStyle={mapStyle}
-                  initialViewState={{
-                    longitude: -98,
-                    latitude: 39,
-                    zoom: 3,
-                  }}
-                  attributionControl={false}
-                  style={{ width: '100%', height: '100%' }}
-                  onClick={handleMapClick}
-                  onMouseEnter={handleMouseEnter}
-                  onMouseLeave={handleMouseLeave}
-                  interactiveLayerIds={expanded && activeLayers.has('ufo') ? ['ufo-circles'] : []}
-                  scrollZoom={expanded}
-                  dragPan={expanded}
-                  dragRotate={expanded}
-                  touchZoomRotate={expanded}
-                  touchPitch={expanded}
-                  doubleClickZoom={expanded}
-                  keyboard={expanded}
-                >
-                  {ufoActive && ufoData && (
-                    <Source id={UFO_SOURCE_ID} type="geojson" data={ufoData}>
-                      <Layer {...heatmapLayer} />
-                      <Layer {...circleLayer} />
-                    </Source>
-                  )}
-
-                  {daylightActive && (
-                    <Source id="daylight-terminator" type="geojson" data={terminatorGeoJson}>
-                      <Layer
-                        id="terminator-fill"
-                        type="fill"
-                        source="daylight-terminator"
-                        paint={{ 'fill-color': '#000000', 'fill-opacity': 0.3 }}
-                      />
-                      <Layer
-                        id="terminator-line"
-                        type="line"
-                        source="daylight-terminator"
-                        paint={{ 'line-color': '#ff990040', 'line-width': 1.5 }}
-                      />
-                    </Source>
-                  )}
-
-                  {OWM_KEY &&
-                    WEATHER_IDS.filter(id => activeLayers.has(id)).map(id => (
-                      <Source key={id} id={`weather-${id}`} {...getWeatherSourceConfig(id, OWM_KEY)}>
-                        <Layer {...getWeatherLayerConfig(id)} />
+            {/* Placeholder — map container lives here in card mode.
+                When expanded, the map container DOM node is moved to portal host on body. */}
+            <div ref={placeholderRef} className="w-full h-full">
+              {/* Map container — this DOM node gets reparented */}
+              <div ref={mapContainerRef} className="w-full h-full relative">
+                {mounted && (
+                  <Map
+                    ref={mapRef}
+                    mapStyle={mapStyle}
+                    initialViewState={{
+                      longitude: -98,
+                      latitude: 39,
+                      zoom: 3,
+                    }}
+                    attributionControl={false}
+                    style={{ width: '100%', height: '100%' }}
+                    onClick={handleMapClick}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                    interactiveLayerIds={expanded && activeLayers.has('ufo') ? ['ufo-circles'] : []}
+                    scrollZoom={expanded}
+                    dragPan={expanded}
+                    dragRotate={expanded}
+                    touchZoomRotate={expanded}
+                    touchPitch={expanded}
+                    doubleClickZoom={expanded}
+                    keyboard={expanded}
+                  >
+                    {ufoActive && ufoData && (
+                      <Source id={UFO_SOURCE_ID} type="geojson" data={ufoData}>
+                        <Layer {...heatmapLayer} />
+                        <Layer {...circleLayer} />
                       </Source>
-                    ))}
+                    )}
 
-                  {popupInfo && (
-                    <Popup
-                      longitude={popupInfo.lng}
-                      latitude={popupInfo.lat}
-                      onClose={() => setPopupInfo(null)}
-                      closeButton={true}
-                      closeOnClick={false}
-                      maxWidth="260px"
-                      offset={12}
-                    >
-                      <div className="p-1">
-                        <p className="text-[12px] font-semibold mb-1">
-                          {popupInfo.properties.city}, {popupInfo.properties.state}
-                        </p>
-                        <p className="text-[10px] opacity-70 mb-1">
-                          {popupInfo.properties.date} &middot; {popupInfo.properties.shape} &middot;{' '}
-                          {popupInfo.properties.duration}
-                        </p>
-                        <p className="text-[11px] leading-snug">{popupInfo.properties.summary}</p>
-                      </div>
-                    </Popup>
-                  )}
-                </Map>
-              )}
+                    {daylightActive && (
+                      <Source id="daylight-terminator" type="geojson" data={terminatorGeoJson}>
+                        <Layer
+                          id="terminator-fill"
+                          type="fill"
+                          source="daylight-terminator"
+                          paint={{ 'fill-color': '#000000', 'fill-opacity': 0.3 }}
+                        />
+                        <Layer
+                          id="terminator-line"
+                          type="line"
+                          source="daylight-terminator"
+                          paint={{ 'line-color': '#ff990040', 'line-width': 1.5 }}
+                        />
+                      </Source>
+                    )}
 
-              {/* Tap-to-expand overlay (card mode only) */}
-              <AnimatePresence>
-                {!expanded && (
-                  <motion.button
-                    onClick={() => setExpanded(true)}
-                    className="absolute inset-0 z-10 cursor-pointer"
-                    aria-label="Expand map"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                  >
-                    <div
-                      className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg"
-                      style={{
-                        background: 'var(--wallpaper-card-bg)',
-                        border: '0.5px solid var(--wallpaper-card-border)',
-                        backdropFilter: 'blur(20px)',
-                        WebkitBackdropFilter: 'blur(20px)',
-                      }}
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 14 14"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        className="text-[var(--wp-text-secondary)]"
+                    {OWM_KEY &&
+                      WEATHER_IDS.filter(id => activeLayers.has(id)).map(id => (
+                        <Source key={id} id={`weather-${id}`} {...getWeatherSourceConfig(id, OWM_KEY)}>
+                          <Layer {...getWeatherLayerConfig(id)} />
+                        </Source>
+                      ))}
+
+                    {popupInfo && (
+                      <Popup
+                        longitude={popupInfo.lng}
+                        latitude={popupInfo.lat}
+                        onClose={() => setPopupInfo(null)}
+                        closeButton={true}
+                        closeOnClick={false}
+                        maxWidth="260px"
+                        offset={12}
                       >
-                        <path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" />
-                      </svg>
-                    </div>
-                  </motion.button>
+                        <div className="p-1">
+                          <p className="text-[12px] font-semibold mb-1">
+                            {popupInfo.properties.city}, {popupInfo.properties.state}
+                          </p>
+                          <p className="text-[10px] opacity-70 mb-1">
+                            {popupInfo.properties.date} &middot; {popupInfo.properties.shape} &middot;{' '}
+                            {popupInfo.properties.duration}
+                          </p>
+                          <p className="text-[11px] leading-snug">{popupInfo.properties.summary}</p>
+                        </div>
+                      </Popup>
+                    )}
+                  </Map>
                 )}
-              </AnimatePresence>
 
-              {/* Controls + minimize (expanded mode only) */}
-              <AnimatePresence>
-                {expanded && (
-                  <motion.div
-                    className="absolute inset-0 z-10 pointer-events-none"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {/* Controls panel */}
-                    <div className="pointer-events-auto">
-                      <MapControls
-                        activeLayers={activeLayers}
-                        onToggle={handleToggle}
-                        weatherAvailable={!!OWM_KEY}
-                      />
-                    </div>
-
-                    {/* Minimize button */}
-                    <button
-                      onClick={() => setExpanded(false)}
-                      className="pointer-events-auto absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer transition-all duration-150 active:scale-95"
-                      style={{
-                        background: 'var(--wallpaper-card-bg)',
-                        border: '0.5px solid var(--wallpaper-card-border)',
-                        boxShadow: 'var(--wallpaper-card-shadow)',
-                        backdropFilter: 'blur(40px)',
-                        WebkitBackdropFilter: 'blur(40px)',
-                      }}
-                      title="Minimize map (Esc)"
+                {/* Tap-to-expand overlay (card mode only) */}
+                <AnimatePresence>
+                  {!expanded && (
+                    <motion.button
+                      onClick={() => setExpanded(true)}
+                      className="absolute inset-0 z-10 cursor-pointer"
+                      aria-label="Expand map"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
                     >
-                      <Minimize2 size={16} className="text-[var(--wp-text-secondary)]" />
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                      <div
+                        className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg"
+                        style={{
+                          background: 'var(--wallpaper-card-bg)',
+                          border: '0.5px solid var(--wallpaper-card-border)',
+                          backdropFilter: 'blur(20px)',
+                          WebkitBackdropFilter: 'blur(20px)',
+                        }}
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 14 14"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          className="text-[var(--wp-text-secondary)]"
+                        >
+                          <path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" />
+                        </svg>
+                      </div>
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+
+                {/* Controls + minimize (expanded mode only) */}
+                <AnimatePresence>
+                  {expanded && (
+                    <motion.div
+                      className="absolute inset-0 z-10 pointer-events-none"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {/* Controls panel */}
+                      <div className="pointer-events-auto">
+                        <MapControls
+                          activeLayers={activeLayers}
+                          onToggle={handleToggle}
+                          weatherAvailable={!!OWM_KEY}
+                        />
+                      </div>
+
+                      {/* Minimize button */}
+                      <button
+                        onClick={() => setExpanded(false)}
+                        className="pointer-events-auto absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer transition-all duration-150 active:scale-95"
+                        style={{
+                          background: 'var(--wallpaper-card-bg)',
+                          border: '0.5px solid var(--wallpaper-card-border)',
+                          boxShadow: 'var(--wallpaper-card-shadow)',
+                          backdropFilter: 'blur(40px)',
+                          WebkitBackdropFilter: 'blur(40px)',
+                        }}
+                        title="Minimize map (Esc)"
+                      >
+                        <Minimize2 size={16} className="text-[var(--wp-text-secondary)]" />
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </div>
