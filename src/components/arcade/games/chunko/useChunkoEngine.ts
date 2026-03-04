@@ -53,6 +53,7 @@ interface EngineReturn {
   level: number
   linesCleared: number
   highScore: number
+  nextType: PieceType
   chunkoFired: boolean
   clearChunko: () => void
   start: () => void
@@ -149,6 +150,7 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
   const [level, setLevel] = useState(initialState?.level ?? 1)
   const [linesCleared, setLinesCleared] = useState(initialState?.lines ?? 0)
   const [highScore, setHighScore] = useState(getStoredHighScore)
+  const [nextType, setNextType] = useState<PieceType>(initialState?.nextType ?? 'I')
   const [chunkoFired, setChunkoFired] = useState(false)
 
   const updateGameState = useCallback((state: 'idle' | 'playing' | 'paused' | 'gameover') => {
@@ -175,6 +177,7 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
     const piece: ActivePiece = { type, rotation: 0, row: pos.row, col: pos.col }
 
     nextTypeRef.current = nextFromBag()
+    setNextType(nextTypeRef.current)
     lockTimerRef.current = null
     lockResetsRef.current = 0
 
@@ -518,6 +521,7 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
     const pos = spawnPosition()
     pieceRef.current = { type, rotation: 0, row: pos.row, col: pos.col }
     nextTypeRef.current = bagRef.current.pop() ?? shuffleBag()[0]
+    setNextType(nextTypeRef.current)
 
     updateGameState('playing')
     startLoop()
@@ -634,6 +638,7 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
     level,
     linesCleared,
     highScore,
+    nextType,
     chunkoFired,
     clearChunko,
     start,
