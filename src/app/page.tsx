@@ -6,6 +6,7 @@ import { UpcomingEvents } from '@/components/calendar/UpcomingEvents'
 import { ArcadePanel } from '@/components/arcade/ArcadePanel'
 import { Leaderboard } from '@/components/arcade/Leaderboard'
 import { QuoteRotator } from '@/components/homescreen/QuoteRotator'
+import { WorldMap } from '@/components/map/WorldMap'
 import { AppDock } from '@/components/shell/AppDock'
 import { SwipeablePages } from '@/components/shell/SwipeablePages'
 import { PageIndicator } from '@/components/shell/PageIndicator'
@@ -90,12 +91,16 @@ export default function HomePage() {
                 />
               </div>
             </div>
+            {/* Page 3: World Map */}
+            <div className="h-full">
+              <WorldMap className="w-full h-full" />
+            </div>
           </SwipeablePages>
         </div>
 
         {/* Page dots */}
         <PageIndicator
-          total={2}
+          total={3}
           current={currentPage}
           onPageSelect={setCurrentPage}
         />
