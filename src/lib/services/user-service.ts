@@ -69,3 +69,11 @@ export function updateUserRole(clerkId: string, role: UserRole): void {
     `UPDATE users SET role = ?, updated_at = datetime('now') WHERE clerk_id = ?`
   ).run(role, clerkId)
 }
+
+export function updateDisplayName(clerkId: string, displayName: string): LocalUser | undefined {
+  const db = getDb()
+  db.prepare(
+    `UPDATE users SET display_name = ?, updated_at = datetime('now') WHERE clerk_id = ?`
+  ).run(displayName, clerkId)
+  return getUserByClerkId(clerkId)
+}
