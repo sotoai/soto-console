@@ -66,8 +66,8 @@
   --dock-padding-x: 1.5rem;
   --dock-padding-y: 0.75rem;
   --dock-label-size: 10px;
-  --calendar-height: 420px;
-  --upcoming-max-h: 380px;
+  --calendar-height: 360px;
+  --upcoming-max-h: 320px;
   --page-dot-size: 7px;
   --segment-font: 12px;
   --segment-px: 0.875rem;
@@ -190,6 +190,16 @@
     --segment-font: 11px;
     --segment-px: 0.625rem;
     --segment-py: 0.375rem;
+  }
+}
+
+/* iPad landscape (≥ 901px wide, landscape, ≤ 900px tall) */
+@media (min-width: 901px) and (orientation: landscape) and (max-height: 900px) {
+  :root, :root[data-theme="dark"] {
+    --shell-padding-top: 1rem;
+    --shell-gap: 1rem;
+    --calendar-height: 280px;
+    --upcoming-max-h: 240px;
   }
 }
 
