@@ -19,9 +19,11 @@ export function NoodlerGame({
   onCollapse,
   initialState,
   onStateChange,
+  onScoreSubmit,
 }: NoodlerGameProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasContainerRef = useRef<HTMLDivElement>(null)
+  const scoreSubmittedRef = useRef(false)
 
   const {
     canvasRef,
@@ -64,6 +66,17 @@ export function NoodlerGame({
       render(rect.width, rect.height)
     }
   }, [render])
+
+  // Submit score to leaderboard on gameover
+  useEffect(() => {
+    if (gameState === 'gameover' && score > 0 && !scoreSubmittedRef.current) {
+      scoreSubmittedRef.current = true
+      onScoreSubmit?.('noodler', score)
+    }
+    if (gameState === 'playing') {
+      scoreSubmittedRef.current = false
+    }
+  }, [gameState, score, onScoreSubmit])
 
   const handleCanvasTap = useCallback(() => {
     if (gameState === 'idle') start()

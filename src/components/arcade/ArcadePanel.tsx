@@ -4,16 +4,19 @@ import { useState, useRef, useCallback, type CSSProperties } from 'react'
 import { BentoGrid } from './BentoGrid'
 import { ArcadeOverlay } from './ArcadeOverlay'
 import { GAMES } from './games/registry'
+import { useScoreSubmit } from '@/hooks/useScoreSubmit'
 import type { NoodlerSnapshot } from './games/noodler/useNoodlerEngine'
 
 interface ArcadePanelProps {
   className?: string
   style?: CSSProperties
+  onScoreSubmitted?: (timestamp: number) => void
 }
 
-export function ArcadePanel({ className, style }: ArcadePanelProps) {
+export function ArcadePanel({ className, style, onScoreSubmitted }: ArcadePanelProps) {
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
   const savedStateRef = useRef<NoodlerSnapshot | undefined>(undefined)
+  const { submitScore, lastSubmittedAt } = useScoreSubmit()
 
   const selectedGame = selectedGameId
     ? GAMES.find(g => g.id === selectedGameId)
@@ -34,6 +37,12 @@ export function ArcadePanel({ className, style }: ArcadePanelProps) {
   const handleStateChange = useCallback((snapshot: NoodlerSnapshot) => {
     savedStateRef.current = snapshot
   }, [])
+
+  // Forward score submissions to parent for leaderboard refresh
+  const handleScoreSubmit = useCallback(async (gameId: string, score: number) => {
+    await submitScore(gameId, score)
+    onScoreSubmitted?.(Date.now())
+  }, [submitScore, onScoreSubmitted])
 
   return (
     <>
@@ -67,6 +76,7 @@ export function ArcadePanel({ className, style }: ArcadePanelProps) {
               onCollapse={handleClose}
               initialState={savedStateRef.current}
               onStateChange={handleStateChange}
+              onScoreSubmit={handleScoreSubmit}
             />
           )
         })()}

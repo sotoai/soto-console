@@ -13,6 +13,7 @@ export interface GameComponentProps {
   initialState?: any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onStateChange?: (state: any) => void
+  onScoreSubmit?: (gameId: string, score: number) => void
 }
 
 export interface GameDefinition {

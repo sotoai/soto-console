@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { CalendarWidget } from '@/components/calendar/CalendarWidget'
 import { UpcomingEvents } from '@/components/calendar/UpcomingEvents'
 import { ArcadePanel } from '@/components/arcade/ArcadePanel'
+import { Leaderboard } from '@/components/arcade/Leaderboard'
 import { AppDock } from '@/components/shell/AppDock'
 import { SwipeablePages } from '@/components/shell/SwipeablePages'
 import { PageIndicator } from '@/components/shell/PageIndicator'
@@ -17,6 +18,11 @@ const glassStyle = {
 
 export default function HomePage() {
   const [currentPage, setCurrentPage] = useState(0)
+  const [scoreRefresh, setScoreRefresh] = useState(0)
+
+  const handleScoreSubmitted = useCallback(() => {
+    setScoreRefresh(Date.now())
+  }, [])
 
   return (
     <>
@@ -53,14 +59,23 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Page 2: Arcade */}
+            {/* Page 2: Arcade + Leaderboard */}
             <div
-              className="h-full flex items-start justify-center overflow-y-auto md:overflow-hidden"
+              className="h-full flex items-start justify-center overflow-y-auto"
               style={{ padding: 'var(--shell-padding-top) var(--shell-padding-x) 0.5rem' }}
             >
-              <div className="w-full max-w-5xl animate-fade-in h-full">
+              <div
+                className="w-full max-w-5xl animate-fade-in h-full flex flex-col md:flex-row"
+                style={{ gap: 'var(--shell-gap)' }}
+              >
                 <ArcadePanel
-                  className="rounded-[var(--radius-lg)] bg-[var(--wallpaper-card-bg)] p-4 md:p-5 h-full"
+                  className="rounded-[var(--radius-lg)] bg-[var(--wallpaper-card-bg)] p-4 md:p-5 h-full flex-1 min-w-0"
+                  style={glassStyle}
+                  onScoreSubmitted={handleScoreSubmitted}
+                />
+                <Leaderboard
+                  refreshTrigger={scoreRefresh}
+                  className="rounded-[var(--radius-lg)] bg-[var(--wallpaper-card-bg)] p-4 md:p-5 w-full md:w-72 lg:w-80 shrink-0 flex flex-col"
                   style={glassStyle}
                 />
               </div>
