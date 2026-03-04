@@ -4,10 +4,14 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Radar,
+  Activity,
+  Satellite,
+  Plane,
   CloudSun,
   Thermometer,
   Wind,
   CloudRain,
+  Cloud,
   Sun,
   Mountain,
   ChevronDown,
@@ -24,6 +28,7 @@ const WEATHER_ITEMS: { id: string; label: string; icon: LucideIcon }[] = [
   { id: 'temp', label: 'Temperature', icon: Thermometer },
   { id: 'wind', label: 'Wind', icon: Wind },
   { id: 'precipitation', label: 'Precipitation', icon: CloudRain },
+  { id: 'clouds', label: 'Clouds', icon: Cloud },
 ]
 
 export function MapControls({ activeLayers, onToggle, weatherAvailable }: MapControlsProps) {
@@ -50,6 +55,30 @@ export function MapControls({ activeLayers, onToggle, weatherAvailable }: MapCon
           label="UFO Sightings"
           active={activeLayers.has('ufo')}
           onClick={() => onToggle('ufo')}
+        />
+
+        {/* Earthquakes */}
+        <ToggleRow
+          icon={Activity}
+          label="Earthquakes"
+          active={activeLayers.has('earthquake')}
+          onClick={() => onToggle('earthquake')}
+        />
+
+        {/* ISS Tracker */}
+        <ToggleRow
+          icon={Satellite}
+          label="ISS Tracker"
+          active={activeLayers.has('iss')}
+          onClick={() => onToggle('iss')}
+        />
+
+        {/* Flights */}
+        <ToggleRow
+          icon={Plane}
+          label="Flights"
+          active={activeLayers.has('flights')}
+          onClick={() => onToggle('flights')}
         />
 
         {/* Weather — expandable */}
