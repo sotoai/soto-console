@@ -7,6 +7,7 @@ import {
   getUserBest,
 } from '@/lib/services/score-service'
 import { getDb } from '@/lib/db'
+import { broadcast } from '@/lib/sse/connections'
 
 export async function GET(request: NextRequest) {
   getDb() // ensure schemas are initialized
@@ -49,6 +50,10 @@ export async function POST(request: NextRequest) {
     }
 
     const entry = submitScore(user.id, gameId, score)
+
+    // Notify all connected clients in real-time
+    broadcast('leaderboard-update', { gameId })
+
     return NextResponse.json(entry, { status: 201 })
   } catch {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })

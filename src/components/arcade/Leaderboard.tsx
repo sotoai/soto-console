@@ -4,11 +4,15 @@ import { useEffect, useState, useCallback, type CSSProperties } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { Trophy, RefreshCw } from 'lucide-react'
 import { GAMES } from './games/registry'
+import { OnlineUsers } from './OnlineUsers'
 import { getInitials } from '@/lib/utils'
 import type { LeaderboardEntry } from '@/types/scores'
+import type { OnlineUser } from '@/hooks/useRealtimeEvents'
 
 interface LeaderboardProps {
   refreshTrigger?: number
+  onlineUsers?: OnlineUser[]
+  isConnected?: boolean
   className?: string
   style?: CSSProperties
 }
@@ -21,7 +25,7 @@ const RANK_COLORS: Record<number, string> = {
 
 const playableGames = GAMES.filter(g => !g.comingSoon)
 
-export function Leaderboard({ refreshTrigger, className, style }: LeaderboardProps) {
+export function Leaderboard({ refreshTrigger, onlineUsers, isConnected, className, style }: LeaderboardProps) {
   const { user } = useUser()
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [gameFilter, setGameFilter] = useState<string>('')
@@ -88,6 +92,16 @@ export function Leaderboard({ refreshTrigger, className, style }: LeaderboardPro
           >
             Leaderboard
           </h3>
+          {/* Live connection indicator */}
+          <div
+            className="rounded-full shrink-0 transition-colors duration-500"
+            title={isConnected ? 'Live' : 'Reconnecting…'}
+            style={{
+              width: 6,
+              height: 6,
+              background: isConnected ? '#22c55e' : '#f59e0b',
+            }}
+          />
         </div>
         <button
           onClick={fetchScores}
@@ -116,6 +130,11 @@ export function Leaderboard({ refreshTrigger, className, style }: LeaderboardPro
             ))}
           </select>
         </div>
+      )}
+
+      {/* Online users */}
+      {onlineUsers && onlineUsers.length > 0 && (
+        <OnlineUsers users={onlineUsers} />
       )}
 
       {/* Scores list */}

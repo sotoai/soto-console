@@ -8,6 +8,7 @@ import { Leaderboard } from '@/components/arcade/Leaderboard'
 import { AppDock } from '@/components/shell/AppDock'
 import { SwipeablePages } from '@/components/shell/SwipeablePages'
 import { PageIndicator } from '@/components/shell/PageIndicator'
+import { useRealtimeEvents } from '@/hooks/useRealtimeEvents'
 
 const glassStyle = {
   border: '0.5px solid var(--wallpaper-card-border)',
@@ -19,6 +20,7 @@ const glassStyle = {
 export default function HomePage() {
   const [currentPage, setCurrentPage] = useState(0)
   const [scoreRefresh, setScoreRefresh] = useState(0)
+  const { onlineUsers, leaderboardVersion, isConnected } = useRealtimeEvents()
 
   const handleScoreSubmitted = useCallback(() => {
     setScoreRefresh(Date.now())
@@ -74,7 +76,9 @@ export default function HomePage() {
                   onScoreSubmitted={handleScoreSubmitted}
                 />
                 <Leaderboard
-                  refreshTrigger={scoreRefresh}
+                  refreshTrigger={scoreRefresh + leaderboardVersion}
+                  onlineUsers={onlineUsers}
+                  isConnected={isConnected}
                   className="rounded-[var(--radius-lg)] bg-[var(--wallpaper-card-bg)] p-4 md:p-5 w-full md:w-72 lg:w-80 shrink-0 flex flex-col"
                   style={glassStyle}
                 />
