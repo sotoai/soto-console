@@ -8,11 +8,31 @@ import {
   type WindField,
 } from './layers/wind-field'
 
-const PARTICLE_COUNT = 2500
+const BASE_PARTICLE_COUNT = 2500
 const PARTICLE_MAX_AGE = 120 // frames
-const SPEED_FACTOR = 0.4 // controls how fast particles move
-const TRAIL_FADE = 0.93 // higher = longer trails (0–1)
+const SPEED_FACTOR = 0.15 // controls how fast particles move
+const BASE_TRAIL_FADE = 0.93 // higher = longer trails (0–1)
 const LINE_WIDTH = 1.2
+
+/** Scale particle count down at high zoom so the screen isn't overwhelmed */
+function getParticleCount(zoom: number): number {
+  if (zoom <= 4) return BASE_PARTICLE_COUNT
+  // Reduce by ~40% per zoom level above 4, floor at 200
+  return Math.max(200, Math.round(BASE_PARTICLE_COUNT * Math.pow(0.6, zoom - 4)))
+}
+
+/** Trail fade shortens at high zoom so trails don't pile up */
+function getTrailFade(zoom: number): number {
+  if (zoom <= 4) return BASE_TRAIL_FADE
+  // Faster fade at high zoom
+  return Math.max(0.8, BASE_TRAIL_FADE - (zoom - 4) * 0.02)
+}
+
+/** Particle opacity dims at high zoom */
+function getOpacityScale(zoom: number): number {
+  if (zoom <= 5) return 1
+  return Math.max(0.3, 1 - (zoom - 5) * 0.1)
+}
 
 interface Particle {
   x: number
@@ -107,10 +127,12 @@ export function WindOverlay({ mapRef, active, resolvedTheme }: WindOverlayProps)
       fadeCanvas.width = canvas.width
       fadeCanvas.height = canvas.height
 
-      // Reinitialize particles
+      // Reinitialize particles (count based on zoom)
       const w = rect.width
       const h = rect.height
-      particlesRef.current = Array.from({ length: PARTICLE_COUNT }, () => {
+      const zoom = map.getZoom()
+      const count = getParticleCount(zoom)
+      particlesRef.current = Array.from({ length: count }, () => {
         const p: Particle = { x: 0, y: 0, prevX: 0, prevY: 0, age: 0, maxAge: PARTICLE_MAX_AGE }
         resetParticle(p, w, h)
         return p
@@ -121,12 +143,28 @@ export function WindOverlay({ mapRef, active, resolvedTheme }: WindOverlayProps)
     // Load initial wind data
     loadWindData()
 
-    // Reload wind data on map move
+    // Reload wind data on map move + adjust particle count for zoom
     const handleMoveEnd = () => {
       loadWindData()
-      // Reset particles on pan/zoom
       const rect = canvas.parentElement?.getBoundingClientRect()
       if (rect) {
+        const zoom = map.getZoom()
+        const targetCount = getParticleCount(zoom)
+        const current = particlesRef.current
+
+        if (current.length > targetCount) {
+          // Trim particles
+          particlesRef.current = current.slice(0, targetCount)
+        } else if (current.length < targetCount) {
+          // Add particles
+          const toAdd = targetCount - current.length
+          for (let i = 0; i < toAdd; i++) {
+            const p: Particle = { x: 0, y: 0, prevX: 0, prevY: 0, age: 0, maxAge: PARTICLE_MAX_AGE }
+            resetParticle(p, rect.width, rect.height)
+            current.push(p)
+          }
+        }
+        // Reset positions
         particlesRef.current.forEach(p => resetParticle(p, rect.width, rect.height))
       }
       ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -146,12 +184,15 @@ export function WindOverlay({ mapRef, active, resolvedTheme }: WindOverlayProps)
       const w = rect.width
       const h = rect.height
       const dpr = window.devicePixelRatio || 1
+      const zoom = map.getZoom()
+      const trailFade = getTrailFade(zoom)
+      const opacityScale = getOpacityScale(zoom)
 
       // Fade existing trails by drawing semi-transparent rect
       const fadeCtx = fadeCanvas.getContext('2d')
       if (fadeCtx) {
         fadeCtx.clearRect(0, 0, fadeCanvas.width, fadeCanvas.height)
-        fadeCtx.globalAlpha = TRAIL_FADE
+        fadeCtx.globalAlpha = trailFade
         fadeCtx.drawImage(canvas, 0, 0)
         ctx.clearRect(0, 0, canvas.width, canvas.height)
         ctx.save()
@@ -171,9 +212,8 @@ export function WindOverlay({ mapRef, active, resolvedTheme }: WindOverlayProps)
         const wind = windField.sample(lngLat.lat, lngLat.lng)
 
         // Move particle based on wind vector
-        // Scale by speed factor and zoom level
-        const zoom = map.getZoom()
-        const scale = SPEED_FACTOR * Math.pow(2, zoom - 3) * 0.3
+        // Scale by speed factor and zoom level (capped so high zoom doesn't overwhelm)
+        const scale = SPEED_FACTOR * Math.min(Math.pow(2, zoom - 3), 4) * 0.3
         p.prevX = p.x
         p.prevY = p.y
         p.x += wind.u * scale
@@ -193,9 +233,9 @@ export function WindOverlay({ mapRef, active, resolvedTheme }: WindOverlayProps)
         const finalAlpha = alpha * (0.3 + speedAlpha * 0.7)
 
         if (isDark) {
-          ctx.strokeStyle = `rgba(180, 220, 255, ${finalAlpha * 0.7})`
+          ctx.strokeStyle = `rgba(180, 220, 255, ${finalAlpha * 0.7 * opacityScale})`
         } else {
-          ctx.strokeStyle = `rgba(30, 80, 180, ${finalAlpha * 0.6})`
+          ctx.strokeStyle = `rgba(30, 80, 180, ${finalAlpha * 0.6 * opacityScale})`
         }
 
         ctx.beginPath()
