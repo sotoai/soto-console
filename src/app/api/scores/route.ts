@@ -8,10 +8,8 @@ import {
 } from '@/lib/services/score-service'
 import { getDb } from '@/lib/db'
 
-// Ensure DB + schemas are initialized
-getDb()
-
 export async function GET(request: NextRequest) {
+  getDb() // ensure schemas are initialized
   const { searchParams } = request.nextUrl
   const gameId = searchParams.get('gameId')
   const limit = Math.min(Number(searchParams.get('limit') || 10), 50)
@@ -37,6 +35,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  getDb() // ensure schemas are initialized
   try {
     const user = await getAuthUser()
     const { gameId, score } = await request.json()
