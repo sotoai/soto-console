@@ -11,6 +11,7 @@ import {
   Gem,
 } from 'lucide-react'
 import { NoodlerGame } from './noodler/NoodlerGame'
+import { ChunkoGame } from './chunko/ChunkoGame'
 import type { GameDefinition } from './types'
 
 export const GAMES: GameDefinition[] = [
@@ -29,16 +30,15 @@ export const GAMES: GameDefinition[] = [
 
   // ── Medium tiles (2×1) ──
   {
-    id: 'stackr',
-    name: 'Stackr',
-    description: 'Stack falling blocks',
-    tagline: 'Stack. Clear. Repeat.',
+    id: 'chunko',
+    name: 'Chunko',
+    description: 'Classic block stacker',
+    tagline: 'Stack. Clear. CHUNKO!',
     icon: Blocks,
     emoji: '🧱',
     gradient: 'from-cyan-500 to-blue-600',
-    component: null,
+    component: ChunkoGame,
     tileSize: 'medium',
-    comingSoon: true,
   },
 
   // ── Small tiles (1×1) ──
