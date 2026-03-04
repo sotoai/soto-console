@@ -66,7 +66,7 @@ export function UpcomingEvents({ className, style, events = MOCK_EVENTS }: Upcom
         Upcoming
       </h3>
 
-      <div className="space-y-5 overflow-y-auto pr-1" style={{ maxHeight: 'var(--upcoming-max-h)' }}>
+      <div className="space-y-5 overflow-y-auto pr-1 flex-1 min-h-0">
         {grouped.length === 0 ? (
           <p className="text-[13px] text-[var(--wp-text-muted)]">No upcoming events</p>
         ) : (
