@@ -55,12 +55,12 @@ export function DayView({ events = [] }: DayViewProps) {
         </div>
 
         {/* Schedule / Timeline toggle */}
-        <div className="flex items-center gap-0.5 bg-[var(--wp-control-bg)] rounded-md p-[2px]">
+        <div className="flex items-center gap-0.5 bg-[var(--wp-control-bg)] rounded-full p-[2px]">
           {(['schedule', 'timeline'] as const).map(m => (
             <button
               key={m}
               onClick={() => setMode(m)}
-              className="relative px-2 py-1 text-[10px] md:text-[11px] font-semibold uppercase tracking-wider rounded-[4px] cursor-pointer select-none transition-colors duration-150"
+              className="relative px-2.5 py-1 text-[10px] md:text-[11px] font-semibold uppercase tracking-wider rounded-full cursor-pointer select-none transition-colors duration-150"
               style={{
                 color: mode === m ? 'var(--wp-text)' : 'var(--wp-text-muted)',
                 background: mode === m ? 'var(--wp-control-active)' : 'transparent',
