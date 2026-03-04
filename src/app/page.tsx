@@ -5,6 +5,7 @@ import { CalendarWidget } from '@/components/calendar/CalendarWidget'
 import { UpcomingEvents } from '@/components/calendar/UpcomingEvents'
 import { ArcadePanel } from '@/components/arcade/ArcadePanel'
 import { Leaderboard } from '@/components/arcade/Leaderboard'
+import { QuoteRotator } from '@/components/homescreen/QuoteRotator'
 import { AppDock } from '@/components/shell/AppDock'
 import { SwipeablePages } from '@/components/shell/SwipeablePages'
 import { PageIndicator } from '@/components/shell/PageIndicator'
@@ -41,9 +42,9 @@ export default function HomePage() {
         {/* Swipeable page area */}
         <div className="flex-1 min-h-0">
           <SwipeablePages currentPage={currentPage} onPageChange={setCurrentPage}>
-            {/* Page 1: Calendar + Upcoming Events */}
+            {/* Page 1: Calendar + Upcoming Events + Quote */}
             <div
-              className="h-full flex items-start justify-center overflow-y-auto md:overflow-hidden"
+              className="h-full flex flex-col items-center justify-start overflow-y-auto md:overflow-hidden"
               style={{ padding: 'var(--shell-padding-top) var(--shell-padding-x) 0.5rem' }}
             >
               <div
@@ -58,6 +59,11 @@ export default function HomePage() {
                   className="rounded-[var(--radius-lg)] bg-[var(--wallpaper-card-bg)] p-4 md:p-5"
                   style={glassStyle}
                 />
+              </div>
+
+              {/* Rotating quote — ambient text over wallpaper */}
+              <div className="mt-4 md:mt-6 w-full max-w-5xl animate-fade-in">
+                <QuoteRotator />
               </div>
             </div>
 
