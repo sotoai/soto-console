@@ -10,15 +10,24 @@ import { Minimize2 } from 'lucide-react'
 import { MapControls } from './MapControls'
 import { MapLegend } from './MapLegend'
 import { WeatherPopup } from './WeatherPopup'
+import { WindOverlay } from './WindOverlay'
 import { getBaseStyle } from './map-styles'
 import { computeTerminator } from './layers/daylight'
 import {
   getWeatherSourceConfig,
   getWeatherLayerConfig,
   fetchCurrentWeather,
+  OWM_TILE_IDS,
+  type OWMTileLayerId,
   type WeatherLayerId,
   type WeatherData,
 } from './layers/weather-layers'
+import {
+  fetchRadarFrames,
+  getRadarSourceConfig,
+  getRadarLayerConfig,
+  type RadarFrame,
+} from './layers/rain-viewer'
 import { UFO_SOURCE_ID, getUfoHeatmapLayer, getUfoCircleLayer } from './layers/ufo-layer'
 import {
   EARTHQUAKE_SOURCE_ID,
@@ -29,8 +38,10 @@ import {
 import { fetchISSPosition, type ISSPosition } from './layers/iss-layer'
 import { FLIGHT_SOURCE_ID, fetchFlights, getFlightCircleLayer } from './layers/flight-layer'
 
-const WEATHER_IDS: WeatherLayerId[] = ['temp', 'wind', 'precipitation', 'clouds']
+const ALL_WEATHER_IDS: WeatherLayerId[] = ['temp', 'wind', 'precipitation', 'clouds']
 const OWM_KEY = process.env.NEXT_PUBLIC_OWM_API_KEY ?? ''
+const RADAR_FRAME_COUNT = 8
+const RADAR_ANIMATION_INTERVAL = 600
 
 interface WorldMapProps {
   className?: string
@@ -69,6 +80,10 @@ export function WorldMap({ className, style }: WorldMapProps) {
     data: WeatherData | null
     loading: boolean
   } | null>(null)
+
+  // RainViewer radar state
+  const [radarFrames, setRadarFrames] = useState<RadarFrame[]>([])
+  const [currentRadarFrame, setCurrentRadarFrame] = useState(0)
 
   useEffect(() => setMounted(true), [])
 
@@ -219,6 +234,41 @@ export function WorldMap({ className, style }: WorldMapProps) {
     }
   }, [flightsActive])
 
+  // ── RainViewer: fetch frames on toggle, animate ──
+  const precipActive = activeLayers.has('precipitation')
+  useEffect(() => {
+    if (!precipActive) return
+    let cancelled = false
+    const load = () => {
+      fetchRadarFrames()
+        .then(data => {
+          if (cancelled) return
+          const allFrames = [...data.past.slice(-RADAR_FRAME_COUNT), ...data.nowcast]
+          setRadarFrames(allFrames)
+          setCurrentRadarFrame(0)
+        })
+        .catch(console.error)
+    }
+    load()
+    const refreshTimer = setInterval(load, 5 * 60_000)
+    return () => {
+      cancelled = true
+      clearInterval(refreshTimer)
+    }
+  }, [precipActive])
+
+  // Animate through radar frames
+  useEffect(() => {
+    if (!precipActive || radarFrames.length === 0) return
+    const timer = setInterval(() => {
+      setCurrentRadarFrame(prev => (prev + 1) % radarFrames.length)
+    }, RADAR_ANIMATION_INTERVAL)
+    return () => clearInterval(timer)
+  }, [precipActive, radarFrames.length])
+
+  // ── Wind layer active ──
+  const windActive = activeLayers.has('wind')
+
   // ── Map style ──
   const mapStyle = useMemo(
     () => getBaseStyle(resolvedTheme, activeLayers.has('relief')),
@@ -237,7 +287,7 @@ export function WorldMap({ className, style }: WorldMapProps) {
 
   // Check if any weather layer is active (for tap-to-inspect)
   const anyWeatherActive = useMemo(
-    () => WEATHER_IDS.some(id => activeLayers.has(id)),
+    () => ALL_WEATHER_IDS.some(id => activeLayers.has(id)),
     [activeLayers],
   )
 
@@ -492,11 +542,19 @@ export function WorldMap({ className, style }: WorldMapProps) {
                       </Source>
                     )}
 
-                    {/* Weather tile layers */}
+                    {/* OWM raster tile layers (temp, clouds only) */}
                     {OWM_KEY &&
-                      WEATHER_IDS.filter(id => activeLayers.has(id)).map(id => (
+                      OWM_TILE_IDS.filter(id => activeLayers.has(id)).map(id => (
                         <Source key={id} id={`weather-${id}`} {...getWeatherSourceConfig(id, OWM_KEY)}>
                           <Layer {...getWeatherLayerConfig(id)} />
+                        </Source>
+                      ))}
+
+                    {/* RainViewer animated radar (precipitation) */}
+                    {precipActive &&
+                      radarFrames.map((frame, i) => (
+                        <Source key={`radar-${i}`} id={`radar-frame-${i}`} {...getRadarSourceConfig(frame)}>
+                          <Layer {...getRadarLayerConfig(i, i === currentRadarFrame)} />
                         </Source>
                       ))}
 
@@ -572,6 +630,13 @@ export function WorldMap({ className, style }: WorldMapProps) {
                     )}
                   </Map>
                 )}
+
+                {/* Wind particle canvas overlay */}
+                <WindOverlay
+                  mapRef={mapRef}
+                  active={windActive && mounted}
+                  resolvedTheme={resolvedTheme}
+                />
 
                 {/* Tap-to-expand overlay (card mode only) */}
                 <AnimatePresence>

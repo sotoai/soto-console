@@ -1,23 +1,22 @@
 import type { RasterSourceSpecification, RasterLayerSpecification } from 'maplibre-gl'
 
+/**
+ * OWM tile layer IDs — only temp and clouds use OWM raster tiles.
+ * Wind uses canvas particle overlay (WindOverlay.tsx).
+ * Precipitation uses RainViewer animated radar (rain-viewer.ts).
+ */
+export type OWMTileLayerId = 'temp' | 'clouds'
+
+/** All weather-related layer IDs including non-tile layers */
 export type WeatherLayerId = 'temp' | 'wind' | 'precipitation' | 'clouds'
 
-const OWM_TILE_LAYERS: Record<WeatherLayerId, string> = {
+const OWM_TILE_LAYERS: Record<OWMTileLayerId, string> = {
   temp: 'temp_new',
-  wind: 'wind_new',
-  precipitation: 'precipitation_new',
   clouds: 'clouds_new',
 }
 
-export const WEATHER_META: Record<WeatherLayerId, { label: string }> = {
-  temp: { label: 'Temperature' },
-  wind: { label: 'Wind' },
-  precipitation: { label: 'Precipitation' },
-  clouds: { label: 'Clouds' },
-}
-
 export function getWeatherSourceConfig(
-  layerId: WeatherLayerId,
+  layerId: OWMTileLayerId,
   apiKey: string,
 ): RasterSourceSpecification {
   const owmLayer = OWM_TILE_LAYERS[layerId]
@@ -29,7 +28,7 @@ export function getWeatherSourceConfig(
   }
 }
 
-export function getWeatherLayerConfig(layerId: WeatherLayerId): RasterLayerSpecification {
+export function getWeatherLayerConfig(layerId: OWMTileLayerId): RasterLayerSpecification {
   return {
     id: `weather-${layerId}`,
     type: 'raster',
@@ -40,6 +39,9 @@ export function getWeatherLayerConfig(layerId: WeatherLayerId): RasterLayerSpeci
     },
   }
 }
+
+/** Which layer IDs still use OWM raster tiles */
+export const OWM_TILE_IDS: OWMTileLayerId[] = ['temp', 'clouds']
 
 // ── Tap-to-inspect: OWM Current Weather API ──
 
