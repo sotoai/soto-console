@@ -39,39 +39,33 @@ export function CalendarWidget({ className, style }: CalendarWidgetProps) {
   return (
     <>
       <div className={className} style={style}>
-        {/* Segmented control */}
-        <div className="flex items-center gap-1 mb-3 md:mb-5">
-          <div className="relative flex items-center bg-[var(--wp-control-bg)] rounded-full p-[3px] gap-[2px]">
-            {VIEWS.map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setActiveView(key)}
-                className="relative z-10 rounded-full transition-colors duration-200 cursor-pointer select-none font-semibold flex items-center justify-center min-h-[44px]"
-                style={{
-                  padding: `var(--segment-py) var(--segment-px)`,
-                  fontSize: 'var(--segment-font)',
-                  color: activeView === key ? 'var(--wp-text)' : 'var(--wp-text-secondary)',
-                }}
-              >
-                {activeView === key && (
-                  <motion.div
-                    layoutId="calendar-segment"
-                    className="absolute inset-0 bg-[var(--wp-control-active)] rounded-full"
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10">{label}</span>
-              </button>
-            ))}
-
-            {/* Eternity button */}
+        {/* Segmented control — minimal inline tabs */}
+        <div className="flex items-center gap-3 mb-2">
+          {VIEWS.map(({ key, label }) => (
             <button
-              onClick={() => setEternityOpen(true)}
-              className="relative z-10 px-3 text-[14px] font-semibold rounded-full transition-all duration-200 cursor-pointer select-none text-[var(--wp-text-tertiary)] active:text-[var(--wp-text-secondary)] active:bg-[var(--wp-control-bg)] flex items-center justify-center min-h-[44px]"
+              key={key}
+              onClick={() => setActiveView(key)}
+              className="relative text-[11px] md:text-[12px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors duration-200 py-1"
+              style={{
+                color: activeView === key ? 'var(--wp-text)' : 'var(--wp-text-muted)',
+              }}
             >
-              &infin;
+              {label}
+              {activeView === key && (
+                <motion.div
+                  layoutId="calendar-segment"
+                  className="absolute -bottom-[1px] left-0 right-0 h-[1.5px] rounded-full bg-[var(--wp-text)]"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
             </button>
-          </div>
+          ))}
+          <button
+            onClick={() => setEternityOpen(true)}
+            className="text-[13px] md:text-[14px] font-semibold cursor-pointer select-none transition-colors duration-200 text-[var(--wp-text-muted)] hover:text-[var(--wp-text-secondary)] py-1"
+          >
+            &infin;
+          </button>
         </div>
 
         {/* Responsive-height content area */}
