@@ -1,13 +1,14 @@
 'use client'
 
 import { useRef, useCallback } from 'react'
-import { ChevronLeft, ChevronDown, ChevronRight, RotateCw, ChevronsDown } from 'lucide-react'
+import { ChevronLeft, ChevronDown, ChevronRight, RotateCw, RotateCcw, ChevronsDown } from 'lucide-react'
 
 interface TouchControlsProps {
   onMoveLeft: () => void
   onMoveRight: () => void
   onMoveDown: () => void
-  onRotate: () => void
+  onRotateCW: () => void
+  onRotateCCW: () => void
   onHardDrop: () => void
   disabled?: boolean
 }
@@ -96,7 +97,8 @@ export function TouchControls({
   onMoveLeft,
   onMoveRight,
   onMoveDown,
-  onRotate,
+  onRotateCW,
+  onRotateCCW,
   onHardDrop,
   disabled = false,
 }: TouchControlsProps) {
@@ -136,9 +138,15 @@ export function TouchControls({
       {/* Action controls */}
       <div className="flex items-center gap-3">
         <GameButton
-          onAction={onRotate}
+          onAction={onRotateCCW}
+          icon={<RotateCcw size={20} className="text-white/60" strokeWidth={2} />}
+          label="CCW"
+          disabled={disabled}
+        />
+        <GameButton
+          onAction={onRotateCW}
           icon={<RotateCw size={20} className="text-white/60" strokeWidth={2} />}
-          label="Rotate"
+          label="CW"
           disabled={disabled}
         />
         <GameButton

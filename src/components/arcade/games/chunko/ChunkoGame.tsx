@@ -119,7 +119,8 @@ export function ChunkoGame({
     moveRight,
     moveDown,
     hardDrop,
-    rotate,
+    rotateCW,
+    rotateCCW,
     render,
     getSnapshot,
   } = useChunkoEngine(initialState)
@@ -174,8 +175,8 @@ export function ChunkoGame({
   const handleCanvasTap = useCallback(() => {
     if (gameState === 'idle') start()
     else if (gameState === 'gameover') restart()
-    else if (gameState === 'playing') rotate()
-  }, [gameState, start, restart, rotate])
+    else if (gameState === 'playing') rotateCW()
+  }, [gameState, start, restart, rotateCW])
 
   // Swipe controls (still works on mobile + desktop)
   const bind = useDrag(
@@ -376,7 +377,8 @@ export function ChunkoGame({
             onMoveLeft={moveLeft}
             onMoveRight={moveRight}
             onMoveDown={() => { moveDown() }}
-            onRotate={rotate}
+            onRotateCW={rotateCW}
+            onRotateCCW={rotateCCW}
             onHardDrop={hardDrop}
             disabled={gameState !== 'playing'}
           />

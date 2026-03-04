@@ -64,7 +64,8 @@ interface EngineReturn {
   moveRight: () => void
   moveDown: () => boolean
   hardDrop: () => void
-  rotate: () => void
+  rotateCW: () => void
+  rotateCCW: () => void
   render: (width: number, height: number) => void
   getSnapshot: () => ChunkoSnapshot
 }
@@ -224,6 +225,26 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
       if (isValid(rotated, boardRef.current)) {
         pieceRef.current = rotated
         // Reset lock delay on successful rotation
+        if (lockTimerRef.current !== null && lockResetsRef.current < MAX_LOCK_RESETS) {
+          lockTimerRef.current = performance.now()
+          lockResetsRef.current++
+        }
+        return true
+      }
+    }
+    return false
+  }, [])
+
+  const tryRotateCCW = useCallback((): boolean => {
+    const piece = pieceRef.current
+    const from = piece.rotation
+    const to = (from + 3) % 4 // CCW = 3 steps CW
+    const kicks = getKicks(piece.type, from, to)
+
+    for (const [dc, dr] of kicks) {
+      const rotated = { ...piece, rotation: to, row: piece.row - dr, col: piece.col + dc }
+      if (isValid(rotated, boardRef.current)) {
+        pieceRef.current = rotated
         if (lockTimerRef.current !== null && lockResetsRef.current < MAX_LOCK_RESETS) {
           lockTimerRef.current = performance.now()
           lockResetsRef.current++
@@ -566,6 +587,7 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
   }, [tryMove, lockPiece])
 
   const rotateCW = useCallback(() => { tryRotate() }, [tryRotate])
+  const rotateCCW = useCallback(() => { tryRotateCCW() }, [tryRotateCCW])
 
   const getSnapshot = useCallback((): ChunkoSnapshot => ({
     board: boardRef.current.map(r => [...r]),
@@ -604,6 +626,8 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
         S: () => moveDown(),
         w: rotateCW,
         W: rotateCW,
+        z: rotateCCW,
+        Z: rotateCCW,
       }
 
       if (keyMap[e.key]) {
@@ -624,7 +648,7 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [start, resume, pause, moveLeft, moveRight, moveDown, hardDrop, rotateCW])
+  }, [start, resume, pause, moveLeft, moveRight, moveDown, hardDrop, rotateCW, rotateCCW])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -649,7 +673,8 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
     moveRight,
     moveDown,
     hardDrop,
-    rotate: rotateCW,
+    rotateCW,
+    rotateCCW,
     render,
     getSnapshot,
   }
