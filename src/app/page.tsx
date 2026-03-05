@@ -6,6 +6,7 @@ import { UpcomingEvents } from '@/components/calendar/UpcomingEvents'
 import { ArcadePanel } from '@/components/arcade/ArcadePanel'
 import { Leaderboard } from '@/components/arcade/Leaderboard'
 import { QuoteRotator } from '@/components/homescreen/QuoteRotator'
+import { SmartHomePage } from '@/components/smarthome/SmartHomePage'
 import { WorldMap } from '@/components/map/WorldMap'
 import { AppDock } from '@/components/shell/AppDock'
 import { SwipeablePages } from '@/components/shell/SwipeablePages'
@@ -91,7 +92,18 @@ export default function HomePage() {
                 />
               </div>
             </div>
-            {/* Page 3: World Map */}
+            {/* Page 3: Smart Home */}
+            <div
+              className="h-full flex items-start justify-center overflow-y-auto"
+              style={{ padding: 'var(--shell-padding-top) var(--shell-padding-x) 0.5rem' }}
+            >
+              <SmartHomePage
+                className="w-full max-w-5xl animate-fade-in h-full rounded-[var(--radius-lg)] bg-[var(--wallpaper-card-bg)] p-4 md:p-5 flex flex-col"
+                style={glassStyle}
+              />
+            </div>
+
+            {/* Page 4: World Map */}
             <div className="h-full">
               <WorldMap className="w-full h-full" />
             </div>
@@ -100,7 +112,7 @@ export default function HomePage() {
 
         {/* Page dots */}
         <PageIndicator
-          total={3}
+          total={4}
           current={currentPage}
           onPageSelect={setCurrentPage}
         />
