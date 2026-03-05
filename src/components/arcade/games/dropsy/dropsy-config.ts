@@ -22,8 +22,8 @@ export const DROPSY = {
   DROP_SIZE: 0.035,
 
   // ── Brick wall ──
-  WALL_Y: 0.115,                // top edge of the wall (normalized)
-  WALL_HEIGHT: 0.035,           // wall height (normalized)
+  WALL_Y: 0.17,                 // top edge of the wall (normalized)
+  WALL_HEIGHT: 0.045,           // wall height (normalized)
   WALL_BRICK_ROWS: 3,
 
   // ── Sprite animation ──
