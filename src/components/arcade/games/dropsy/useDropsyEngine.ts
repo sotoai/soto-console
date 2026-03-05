@@ -65,89 +65,70 @@ function randomEmoji(): string {
   return DROP_EMOJIS[Math.floor(Math.random() * DROP_EMOJIS.length)]
 }
 
+// ─── Sprite loader ───
+
+function loadImage(src: string): HTMLImageElement {
+  const img = new Image()
+  img.src = src
+  return img
+}
+
 // ─── Drawing helpers ───
 
-function drawPug(
+function drawBrickWall(
   ctx: CanvasRenderingContext2D,
-  cx: number, cy: number,
-  w: number, h: number,
-  bobPhase: number,
+  canvasW: number,
+  wallTop: number,
+  wallH: number,
 ) {
-  const bob = Math.sin(bobPhase) * h * 0.04
-  const y = cy + bob
+  const rows = DROPSY.WALL_BRICK_ROWS
+  const brickH = wallH / rows
+  const brickW = brickH * 2.2
+  const mortarSize = Math.max(1, brickH * 0.12)
 
-  const faceR = w * 0.45
-  const hatW = w * 0.55
-  const hatH = h * 0.32
-  const earW = w * 0.18
-  const earH = h * 0.22
+  // Mortar background
+  ctx.fillStyle = DROPSY.WALL_MORTAR_COLOR
+  ctx.fillRect(0, wallTop, canvasW, wallH)
 
-  // Chef hat
-  ctx.fillStyle = DROPSY.PUG_HAT_COLOR
-  ctx.beginPath()
-  ctx.rect(cx - hatW / 2, y - faceR - hatH, hatW, hatH)
-  ctx.fill()
-  ctx.beginPath()
-  ctx.arc(cx, y - faceR - hatH, hatW / 2, Math.PI, 0)
-  ctx.fill()
-  // Hat band
-  ctx.fillStyle = '#e0e0e0'
-  ctx.fillRect(cx - hatW / 2, y - faceR - 4, hatW, 4)
+  // Draw bricks row by row
+  for (let row = 0; row < rows; row++) {
+    const y = wallTop + row * brickH
+    const offset = row % 2 === 0 ? 0 : brickW * 0.5  // stagger
+    const cols = Math.ceil(canvasW / brickW) + 2
 
-  // Ears
-  ctx.fillStyle = DROPSY.PUG_EAR_COLOR
-  ctx.beginPath()
-  ctx.ellipse(cx - faceR * 0.82, y - faceR * 0.05, earW, earH, -0.3, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.beginPath()
-  ctx.ellipse(cx + faceR * 0.82, y - faceR * 0.05, earW, earH, 0.3, 0, Math.PI * 2)
-  ctx.fill()
+    for (let col = -1; col < cols; col++) {
+      const x = offset + col * brickW
 
-  // Face
-  ctx.fillStyle = DROPSY.PUG_FACE_COLOR
-  ctx.beginPath()
-  ctx.arc(cx, y, faceR, 0, Math.PI * 2)
-  ctx.fill()
+      const bx = x + mortarSize / 2
+      const by = y + mortarSize / 2
+      const bw = brickW - mortarSize
+      const bh = brickH - mortarSize
 
-  // Robber mask
-  ctx.fillStyle = DROPSY.PUG_MASK_COLOR
-  ctx.beginPath()
-  ctx.ellipse(cx, y - faceR * 0.12, faceR * 0.9, faceR * 0.22, 0, 0, Math.PI * 2)
-  ctx.fill()
+      if (bx + bw < 0 || bx > canvasW) continue
 
-  // Eyes
-  const eyeR = faceR * 0.13
-  const eyeSpacing = faceR * 0.38
-  const eyeY = y - faceR * 0.12
-  ctx.fillStyle = '#FFFFFF'
-  ctx.beginPath()
-  ctx.arc(cx - eyeSpacing, eyeY, eyeR, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.beginPath()
-  ctx.arc(cx + eyeSpacing, eyeY, eyeR, 0, Math.PI * 2)
-  ctx.fill()
-  // Pupils
-  ctx.fillStyle = '#000000'
-  const pupilR = eyeR * 0.55
-  ctx.beginPath()
-  ctx.arc(cx - eyeSpacing, eyeY, pupilR, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.beginPath()
-  ctx.arc(cx + eyeSpacing, eyeY, pupilR, 0, Math.PI * 2)
-  ctx.fill()
+      // Main brick
+      ctx.fillStyle = DROPSY.WALL_BRICK_COLOR
+      ctx.fillRect(bx, by, bw, bh)
 
-  // Nose
-  ctx.fillStyle = DROPSY.PUG_NOSE_COLOR
-  ctx.beginPath()
-  ctx.arc(cx, y + faceR * 0.25, faceR * 0.1, 0, Math.PI * 2)
-  ctx.fill()
+      // Top-left highlight
+      ctx.fillStyle = DROPSY.WALL_BRICK_HIGHLIGHT
+      ctx.fillRect(bx, by, bw, Math.max(1, bh * 0.18))
+      ctx.fillRect(bx, by, Math.max(1, bw * 0.06), bh)
 
-  // Mouth
-  ctx.strokeStyle = DROPSY.PUG_NOSE_COLOR
-  ctx.lineWidth = 1.5
-  ctx.beginPath()
-  ctx.arc(cx, y + faceR * 0.2, faceR * 0.15, 0.2, Math.PI - 0.2)
-  ctx.stroke()
+      // Bottom-right shadow
+      ctx.fillStyle = DROPSY.WALL_SHADOW_COLOR
+      ctx.fillRect(bx, by + bh - Math.max(1, bh * 0.15), bw, Math.max(1, bh * 0.15))
+      ctx.fillRect(bx + bw - Math.max(1, bw * 0.04), by, Math.max(1, bw * 0.04), bh)
+    }
+  }
+
+  // Wall top edge (darker line)
+  ctx.fillStyle = DROPSY.WALL_SHADOW_COLOR
+  ctx.fillRect(0, wallTop, canvasW, Math.max(1, mortarSize * 0.5))
+
+  // Wall bottom edge cap
+  ctx.fillStyle = DROPSY.WALL_MORTAR_COLOR
+  ctx.fillRect(0, wallTop + wallH - 1, canvasW, 1)
 }
 
 function drawBasket(
@@ -209,10 +190,24 @@ function drawLivesIndicator(
 export function useDropsyEngine(initialState?: DropsySnapshot): EngineReturn {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
+  // ── Sprites ──
+  const spriteHeadRef = useRef<HTMLImageElement | null>(null)
+  const spriteThrowLeftRef = useRef<HTMLImageElement | null>(null)
+  const spriteThrowStraightRef = useRef<HTMLImageElement | null>(null)
+
+  // Load sprites on mount
+  useEffect(() => {
+    spriteHeadRef.current = loadImage(DROPSY.SPRITE_HEAD)
+    spriteThrowLeftRef.current = loadImage(DROPSY.SPRITE_THROW_LEFT)
+    spriteThrowStraightRef.current = loadImage(DROPSY.SPRITE_THROW_STRAIGHT)
+  }, [])
+
   // ── Mutable game state (refs) ──
   const pugXRef = useRef(initialState?.pugX ?? 0.5)
   const pugDirRef = useRef<1 | -1>(initialState?.pugDirection ?? 1)
   const pugBobRef = useRef(0)
+  const pugThrowTimeRef = useRef(0)            // timestamp of last throw
+  const pugThrowDirRef = useRef<-1 | 0 | 1>(0) // -1=left, 0=straight, 1=right
 
   const dropsRef = useRef<FallingDrop[]>(initialState?.drops ?? [])
   const dropIdRef = useRef(0)
@@ -301,10 +296,20 @@ export function useDropsyEngine(initialState?: DropsySnapshot): EngineReturn {
     const isSpicy = catchCountRef.current >= nextSpicyAtRef.current
     const baseSpeed = DROPSY.FALL_SPEEDS[idx]
 
+    // Set throw animation
+    pugThrowTimeRef.current = timestamp
+    // Pick throw direction: use pug's movement direction
+    const r = Math.random()
+    if (r < 0.3) {
+      pugThrowDirRef.current = 0 // straight
+    } else {
+      pugThrowDirRef.current = pugDirRef.current // left or right
+    }
+
     const drop: FallingDrop = {
       id: dropIdRef.current++,
       x: pugXRef.current,
-      y: DROPSY.PUG_Y + DROPSY.PUG_HEIGHT / 2,
+      y: DROPSY.WALL_Y,  // drops start at wall level (appears to come from behind wall)
       emoji: isSpicy ? SPICY_EMOJI : randomEmoji(),
       isSpicy,
       speed: isSpicy ? baseSpeed * DROPSY.SPICY_SPEED_MULT : baseSpeed,
@@ -440,17 +445,74 @@ export function useDropsyEngine(initialState?: DropsySnapshot): EngineReturn {
     ctx.lineTo(width, groundY)
     ctx.stroke()
 
-    // Draw pug
-    drawPug(
-      ctx,
-      toX(pugXRef.current),
-      toY(DROPSY.PUG_Y),
-      toW(DROPSY.PUG_WIDTH),
-      toH(DROPSY.PUG_HEIGHT),
-      pugBobRef.current,
-    )
+    // ── Draw pug sprite (BEHIND the wall) ──
+    const pugCx = toX(pugXRef.current)
+    const pugSpriteW = toW(DROPSY.PUG_WIDTH)
+    const now = performance.now()
+    const isThrowing = now - pugThrowTimeRef.current < DROPSY.THROW_DURATION
+    const wallTopPx = toY(DROPSY.WALL_Y)
 
-    // Draw falling emojis
+    ctx.save()
+    // Enable pixelated rendering for retro sprites
+    ctx.imageSmoothingEnabled = false
+
+    if (isThrowing) {
+      // ── Throwing pose ──
+      const throwDir = pugThrowDirRef.current
+      let sprite: HTMLImageElement | null = null
+
+      if (throwDir === 0) {
+        sprite = spriteThrowStraightRef.current
+      } else {
+        sprite = spriteThrowLeftRef.current
+      }
+
+      if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+        const aspectRatio = sprite.naturalHeight / sprite.naturalWidth
+        const drawW = pugSpriteW * 1.4  // throwing sprites are wider (show arms)
+        const drawH = drawW * aspectRatio
+        // Position: bottom of sprite aligns with bottom of wall
+        const wallBottomPx = wallTopPx + toH(DROPSY.WALL_HEIGHT)
+        const drawY = wallBottomPx - drawH
+
+        ctx.save()
+        ctx.translate(pugCx, 0)
+        // Mirror for throwing right (sprite faces left by default)
+        if (throwDir === 1) {
+          ctx.scale(-1, 1)
+        }
+        ctx.drawImage(sprite, -drawW / 2, drawY, drawW, drawH)
+        ctx.restore()
+      }
+    } else {
+      // ── Walking pose (head only) ──
+      const sprite = spriteHeadRef.current
+      if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+        const aspectRatio = sprite.naturalHeight / sprite.naturalWidth
+        const drawW = pugSpriteW * 1.2
+        const drawH = drawW * aspectRatio
+        // Bob animation
+        const bob = Math.sin(pugBobRef.current) * toH(0.004)
+        // Position: bottom of head sprite aligns with top of wall (head peeks above)
+        const drawY = wallTopPx - drawH * 0.82 + bob
+
+        ctx.save()
+        ctx.translate(pugCx, 0)
+        // Default sprite faces left; mirror for right movement
+        if (pugDirRef.current === 1) {
+          ctx.scale(-1, 1)
+        }
+        ctx.drawImage(sprite, -drawW / 2, drawY, drawW, drawH)
+        ctx.restore()
+      }
+    }
+
+    ctx.restore()
+
+    // ── Draw brick wall (ON TOP of pug, creating "behind wall" effect) ──
+    drawBrickWall(ctx, width, wallTopPx, toH(DROPSY.WALL_HEIGHT))
+
+    // ── Draw falling emojis (in front of wall) ──
     const emojiSize = Math.round(toW(DROPSY.DROP_SIZE) * 2.2)
     ctx.font = `${emojiSize}px sans-serif`
     ctx.textAlign = 'center'
@@ -546,6 +608,8 @@ export function useDropsyEngine(initialState?: DropsySnapshot): EngineReturn {
     pugXRef.current = 0.5
     pugDirRef.current = 1
     pugBobRef.current = 0
+    pugThrowTimeRef.current = 0
+    pugThrowDirRef.current = 0
     basketXRef.current = 0.5
     dropsRef.current = []
     dropIdRef.current = 0

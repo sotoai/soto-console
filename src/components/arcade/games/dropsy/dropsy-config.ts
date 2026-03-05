@@ -13,13 +13,21 @@ export interface FallingDrop {
 
 export const DROPSY = {
   // ── Dimensions (normalized 0..1 space) ──
-  PUG_Y: 0.08,
-  PUG_WIDTH: 0.10,
-  PUG_HEIGHT: 0.12,
+  PUG_Y: 0.05,                  // top-center of pug sprite area
+  PUG_WIDTH: 0.12,              // pug sprite width
+  PUG_HEIGHT: 0.14,             // pug sprite height (full body for throwing)
   BASKET_Y: 0.92,
   BASKET_WIDTH: 0.14,
   BASKET_HEIGHT: 0.05,
   DROP_SIZE: 0.035,
+
+  // ── Brick wall ──
+  WALL_Y: 0.115,                // top edge of the wall (normalized)
+  WALL_HEIGHT: 0.035,           // wall height (normalized)
+  WALL_BRICK_ROWS: 3,
+
+  // ── Sprite animation ──
+  THROW_DURATION: 280,          // ms to show throwing pose after a drop
 
   // ── Speed tables (8 levels, indexed by level-1) ──
   PUG_SPEEDS:     [0.15, 0.20, 0.25, 0.30, 0.38, 0.46, 0.54, 0.65],
@@ -54,12 +62,18 @@ export const DROPSY = {
   BASKET_COLOR: '#8B4513',
   BASKET_RIM_COLOR: '#A0522D',
   BASKET_WEAVE_COLOR: '#D2691E',
-  PUG_FACE_COLOR: '#DEB887',
-  PUG_EAR_COLOR: '#C4A265',
-  PUG_MASK_COLOR: '#1a1a1a',
-  PUG_HAT_COLOR: '#FFFFFF',
-  PUG_NOSE_COLOR: '#333333',
   SPICY_GLOW_COLOR: '#EF4444',
+
+  // ── Brick wall colors ──
+  WALL_BRICK_COLOR: '#8B3A2A',
+  WALL_BRICK_HIGHLIGHT: '#A04030',
+  WALL_MORTAR_COLOR: '#4A2520',
+  WALL_SHADOW_COLOR: '#2A1510',
+
+  // ── Sprite paths ──
+  SPRITE_HEAD: '/sprites/pug-head.png',
+  SPRITE_THROW_LEFT: '/sprites/pug-throw-left.png',
+  SPRITE_THROW_STRAIGHT: '/sprites/pug-throw-straight.png',
 } as const
 
 // ─── Emoji pools ───
