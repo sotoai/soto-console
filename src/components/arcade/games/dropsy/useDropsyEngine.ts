@@ -473,7 +473,7 @@ export function useDropsyEngine(initialState?: DropsySnapshot): EngineReturn {
         const drawH = drawW * aspectRatio
         // Position: bottom of sprite aligns with bottom of wall
         const wallBottomPx = wallTopPx + toH(DROPSY.WALL_HEIGHT)
-        const drawY = wallBottomPx - drawH
+        const drawY = wallBottomPx - drawH - 20
 
         ctx.save()
         ctx.translate(pugCx, 0)
@@ -494,7 +494,7 @@ export function useDropsyEngine(initialState?: DropsySnapshot): EngineReturn {
         // Bob animation
         const bob = Math.sin(pugBobRef.current) * toH(0.004)
         // Position: bottom of head sprite aligns with top of wall (head peeks above)
-        const drawY = wallTopPx - drawH * 0.82 + bob
+        const drawY = wallTopPx - drawH * 0.82 + bob - 20
 
         ctx.save()
         ctx.translate(pugCx, 0)
