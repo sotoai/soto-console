@@ -1,0 +1,379 @@
+'use client'
+
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Pause, Play, Maximize2, Minimize2 } from 'lucide-react'
+import { useDropsyEngine, type DropsySnapshot } from './useDropsyEngine'
+import { DROPSY_EMOJIS } from './dropsy-config'
+import type { GameComponentProps } from '../types'
+
+interface DropsyGameProps extends GameComponentProps {
+  initialState?: DropsySnapshot
+  onStateChange?: (snapshot: DropsySnapshot) => void
+}
+
+// ─── Spicy Celebration ───
+
+interface EmojiParticle {
+  id: number
+  emoji: string
+  x: number
+  delay: number
+  duration: number
+}
+
+function SpicyCelebration({ onComplete }: { onComplete: () => void }) {
+  const particles = useMemo<EmojiParticle[]>(() => {
+    return Array.from({ length: 14 }, (_, i) => ({
+      id: i,
+      emoji: DROPSY_EMOJIS[Math.floor(Math.random() * DROPSY_EMOJIS.length)],
+      x: 5 + Math.random() * 90,
+      delay: Math.random() * 0.6,
+      duration: 1.6 + Math.random() * 0.8,
+    }))
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 2800)
+    return () => clearTimeout(timer)
+  }, [onComplete])
+
+  return (
+    <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center"
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1.1, 1, 1] }}
+        transition={{ duration: 2, times: [0, 0.15, 0.7, 1] }}
+      >
+        <span
+          className="text-[28px] md:text-[42px] font-black tracking-tighter"
+          style={{
+            color: '#EF4444',
+            textShadow: '0 0 20px rgba(239,68,68,0.7), 0 0 40px rgba(239,68,68,0.4), 0 2px 4px rgba(0,0,0,0.5)',
+          }}
+        >
+          SPICY!
+        </span>
+      </motion.div>
+
+      {particles.map(p => (
+        <motion.span
+          key={p.id}
+          className="absolute text-[20px] md:text-[26px]"
+          style={{ left: `${p.x}%`, bottom: -40 }}
+          initial={{ y: 0, opacity: 0 }}
+          animate={{
+            y: -500,
+            opacity: [0, 1, 1, 0],
+            x: [0, (Math.random() - 0.5) * 40],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            ease: 'easeOut',
+            opacity: { duration: p.duration, times: [0, 0.1, 0.7, 1] },
+          }}
+        >
+          {p.emoji}
+        </motion.span>
+      ))}
+    </div>
+  )
+}
+
+// ─── Main component ───
+
+export function DropsyGame({
+  isFullscreen,
+  onExpand,
+  onCollapse,
+  initialState,
+  onStateChange,
+  onScoreSubmit,
+}: DropsyGameProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
+  const scoreSubmittedRef = useRef(false)
+
+  const {
+    canvasRef,
+    gameState,
+    score,
+    highScore,
+    lives,
+    level,
+    spicyCount,
+    spicyCaught,
+    clearSpicyCaught,
+    start,
+    pause,
+    resume,
+    restart,
+    setBasketX,
+    render,
+    getSnapshot,
+  } = useDropsyEngine(initialState)
+
+  const [showSpicyCelebration, setShowSpicyCelebration] = useState(false)
+
+  // Trigger spicy celebration
+  useEffect(() => {
+    if (spicyCaught) {
+      setShowSpicyCelebration(true)
+      clearSpicyCaught()
+    }
+  }, [spicyCaught, clearSpicyCaught])
+
+  // Observe container size and re-render canvas
+  useEffect(() => {
+    const el = canvasContainerRef.current
+    if (!el) return
+
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        if (width > 0 && height > 0) {
+          render(width, height)
+        }
+      }
+    })
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [render])
+
+  // Initial render
+  useEffect(() => {
+    const el = canvasContainerRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    if (rect.width > 0 && rect.height > 0) {
+      render(rect.width, rect.height)
+    }
+  }, [render])
+
+  // Submit score to leaderboard on gameover
+  useEffect(() => {
+    if (gameState === 'gameover' && score > 0 && !scoreSubmittedRef.current) {
+      scoreSubmittedRef.current = true
+      onScoreSubmit?.('dropsy', score, spicyCount)
+    }
+    if (gameState === 'playing') {
+      scoreSubmittedRef.current = false
+    }
+  }, [gameState, score, spicyCount, onScoreSubmit])
+
+  // ── Pointer controls (continuous basket tracking) ──
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (gameState !== 'playing') return
+    const rect = canvasContainerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const normalizedX = (e.clientX - rect.left) / rect.width
+    setBasketX(Math.max(0, Math.min(1, normalizedX)))
+  }, [gameState, setBasketX])
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (gameState === 'idle') { start(); return }
+    if (gameState === 'gameover') { restart(); return }
+
+    // Also set basket position on touch
+    const rect = canvasContainerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const normalizedX = (e.clientX - rect.left) / rect.width
+    setBasketX(Math.max(0, Math.min(1, normalizedX)))
+
+    // Capture pointer for tracking outside bounds
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+  }, [gameState, start, restart, setBasketX])
+
+  const handlePauseToggle = useCallback(() => {
+    if (gameState === 'playing') pause()
+    else if (gameState === 'paused') resume()
+  }, [gameState, pause, resume])
+
+  const handleExpand = useCallback(() => {
+    if (gameState === 'playing') pause()
+    onStateChange?.(getSnapshot())
+    onExpand?.()
+  }, [gameState, pause, onExpand, onStateChange, getSnapshot])
+
+  const handleCollapse = useCallback(() => {
+    if (gameState === 'playing') pause()
+    onStateChange?.(getSnapshot())
+    onCollapse?.()
+  }, [gameState, pause, onCollapse, onStateChange, getSnapshot])
+
+  return (
+    <div
+      ref={containerRef}
+      className="flex flex-col w-full h-full select-none"
+      onPointerDown={e => e.stopPropagation()}
+      style={{ touchAction: 'none' }}
+    >
+      {/* HUD */}
+      <div className="flex items-center justify-between px-2 shrink-0" style={{ height: 40 }}>
+        <div className="flex items-center gap-3">
+          <span className="text-[13px] font-mono tabular-nums font-semibold text-[var(--wp-text)]">
+            {score}
+          </span>
+          {spicyCount > 0 && (
+            <span className="text-[11px] font-mono tabular-nums text-red-400 flex items-center gap-0.5">
+              🌶️ {spicyCount}
+            </span>
+          )}
+          <span className="text-[11px] font-mono tabular-nums text-[var(--wp-text-tertiary)]">
+            HI {highScore}
+          </span>
+          <span className="text-[10px] font-mono tabular-nums text-amber-400">
+            LV{level}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          {/* Lives */}
+          <div className="flex items-center gap-0.5 mr-1">
+            {Array.from({ length: lives }).map((_, i) => (
+              <span key={i} className="text-[10px]">🧺</span>
+            ))}
+          </div>
+          {(gameState === 'playing' || gameState === 'paused') && (
+            <button
+              onClick={handlePauseToggle}
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--wp-text-secondary)] active:text-[var(--wp-text)] cursor-pointer"
+            >
+              {gameState === 'playing' ? (
+                <Pause size={16} strokeWidth={1.5} />
+              ) : (
+                <Play size={16} strokeWidth={1.5} />
+              )}
+            </button>
+          )}
+          {isFullscreen ? (
+            <button
+              onClick={handleCollapse}
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--wp-text-secondary)] active:text-[var(--wp-text)] cursor-pointer"
+            >
+              <Minimize2 size={16} strokeWidth={1.5} />
+            </button>
+          ) : (
+            <button
+              onClick={handleExpand}
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--wp-text-secondary)] active:text-[var(--wp-text)] cursor-pointer"
+            >
+              <Maximize2 size={16} strokeWidth={1.5} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Canvas + overlays */}
+      <div
+        ref={canvasContainerRef}
+        className="flex-1 min-h-0 relative overflow-hidden rounded-[var(--radius-sm)]"
+        style={{ touchAction: 'none' }}
+        onPointerMove={handlePointerMove}
+        onPointerDown={handlePointerDown}
+        role="button"
+        tabIndex={0}
+      >
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0"
+        />
+
+        {/* Spicy celebration */}
+        <AnimatePresence>
+          {showSpicyCelebration && (
+            <SpicyCelebration onComplete={() => setShowSpicyCelebration(false)} />
+          )}
+        </AnimatePresence>
+
+        {/* Idle overlay */}
+        <AnimatePresence>
+          {gameState === 'idle' && (
+            <motion.div
+              className="absolute inset-0 flex flex-col items-center justify-center z-10"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="text-center">
+                <p className="text-[28px] md:text-[36px] font-bold text-amber-400 mb-2 tracking-tight">
+                  🐶
+                </p>
+                <p className="text-[18px] md:text-[22px] font-bold text-white/90 mb-1 tracking-tight">
+                  Dropsy
+                </p>
+                <p className="text-[12px] text-white/40 font-medium">
+                  Tap to play
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Paused overlay */}
+        <AnimatePresence>
+          {gameState === 'paused' && (
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center z-10 bg-black/40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => { e.stopPropagation(); resume() }}
+            >
+              <div className="text-center">
+                <Play size={32} className="text-white/60 mx-auto mb-2" strokeWidth={1.5} />
+                <p className="text-[13px] text-white/40 font-medium">
+                  Tap to resume
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Game over overlay */}
+        <AnimatePresence>
+          {gameState === 'gameover' && (
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center z-10 bg-black/60"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <div className="text-center">
+                <p className="text-[20px] md:text-[24px] font-bold text-white/90 mb-1">
+                  Game Over
+                </p>
+                <p className="text-[32px] md:text-[40px] font-bold text-amber-400 tabular-nums mb-1">
+                  {score}
+                </p>
+                {spicyCount > 0 && (
+                  <p className="text-[13px] text-red-400 font-mono tabular-nums mb-2">
+                    🌶️ × {spicyCount} Spicy Catch{spicyCount !== 1 ? 'es' : ''}
+                  </p>
+                )}
+                {score >= highScore && score > 0 && (
+                  <p className="text-[11px] font-semibold text-orange-400 uppercase tracking-wider mb-3">
+                    New High Score!
+                  </p>
+                )}
+                {score < highScore && (
+                  <p className="text-[11px] text-white/30 font-mono tabular-nums mb-3">
+                    Best: {highScore}
+                  </p>
+                )}
+                <p className="text-[12px] text-white/40 font-medium">
+                  Tap to restart
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}

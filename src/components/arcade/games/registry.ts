@@ -1,6 +1,7 @@
 import {
   Smartphone,
   Blocks,
+  Dog,
   Puzzle,
   Car,
   Sword,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react'
 import { NoodlerGame } from './noodler/NoodlerGame'
 import { ChunkoGame } from './chunko/ChunkoGame'
+import { DropsyGame } from './dropsy/DropsyGame'
 import type { GameDefinition } from './types'
 
 export const GAMES: GameDefinition[] = [
@@ -38,6 +40,18 @@ export const GAMES: GameDefinition[] = [
     emoji: '🧱',
     gradient: 'from-cyan-500 to-blue-600',
     component: ChunkoGame,
+    tileSize: 'medium',
+  },
+
+  {
+    id: 'dropsy',
+    name: 'Dropsy',
+    description: 'Catch the falling food!',
+    tagline: "Don't let it drop!",
+    icon: Dog,
+    emoji: '🐶',
+    gradient: 'from-amber-500 to-orange-600',
+    component: DropsyGame,
     tileSize: 'medium',
   },
 
