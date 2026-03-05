@@ -23,10 +23,18 @@ export const NOODLER = {
   SNAKE_COLOR: '#4ADE80',
   SNAKE_HEAD_COLOR: '#22C55E',
   FOOD_COLOR: '#F97316',
+  SAUCY_COLOR: '#EF4444',
   GRID_LINE_COLOR: 'rgba(255,255,255,0.03)',
   BG_COLOR: '#0a0f0a',
   BORDER_RADIUS: 2,
+
+  // Saucy meatball
+  SAUCY_SPAWN_CHANCE: 0.15,      // 15% chance after eating regular food
+  SAUCY_LIFETIME: 4000,          // disappears after 4s (ms)
+  SAUCY_MOVE_INTERVAL: 600,      // moves one cell every 600ms
 } as const
+
+export const NOODLER_EMOJIS = ['🔥', '🍝', '🌶️', '💯', '⚡', '🎯', '🏆', '✨', '💥', '🤤', '👑', '😈']
 
 export const OPPOSITE_DIRECTION: Record<Direction, Direction> = {
   up: 'down',

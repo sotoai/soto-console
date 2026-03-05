@@ -14,6 +14,14 @@ export interface NoodlerSnapshot {
   direction: Direction
   score: number
   speed: number
+  saucyCount: number
+}
+
+interface SaucyMeatball {
+  position: Point
+  direction: Direction
+  spawnTime: number
+  lastMoveTime: number
 }
 
 interface EngineReturn {
@@ -21,6 +29,9 @@ interface EngineReturn {
   gameState: 'idle' | 'playing' | 'paused' | 'gameover'
   score: number
   highScore: number
+  saucyCount: number
+  saucyCaught: boolean
+  clearSaucyCaught: () => void
   start: () => void
   pause: () => void
   resume: () => void
@@ -39,6 +50,25 @@ function randomFood(snake: Point[]): Point {
     }
   } while (snake.some(s => s.x === p.x && s.y === p.y))
   return p
+}
+
+function randomSaucyPosition(snake: Point[], food: Point): Point {
+  let p: Point
+  do {
+    p = {
+      x: Math.floor(Math.random() * NOODLER.GRID_COLS),
+      y: Math.floor(Math.random() * NOODLER.GRID_ROWS),
+    }
+  } while (
+    snake.some(s => s.x === p.x && s.y === p.y) ||
+    (p.x === food.x && p.y === food.y)
+  )
+  return p
+}
+
+function randomCardinalDirection(): Direction {
+  const dirs: Direction[] = ['up', 'down', 'left', 'right']
+  return dirs[Math.floor(Math.random() * dirs.length)]
 }
 
 function initialSnake(): Point[] {
@@ -70,6 +100,10 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
   const speedRef = useRef(initialState?.speed ?? NOODLER.INITIAL_SPEED)
   const sizeRef = useRef({ width: 0, height: 0 })
 
+  // Saucy meatball refs
+  const saucyRef = useRef<SaucyMeatball | null>(null)
+  const saucyCountRef = useRef(initialState?.saucyCount ?? 0)
+
   // rAF-based game loop refs
   const rafRef = useRef<number | null>(null)
   const lastTickTimeRef = useRef(0)
@@ -84,6 +118,8 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
   )
   const [score, setScore] = useState(initialState?.score ?? 0)
   const [highScore, setHighScore] = useState(getStoredHighScore)
+  const [saucyCount, setSaucyCount] = useState(initialState?.saucyCount ?? 0)
+  const [saucyCaught, setSaucyCaught] = useState(false)
 
   const scoreRef = useRef(initialState?.score ?? 0)
 
@@ -91,6 +127,10 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
   const updateGameState = useCallback((state: 'idle' | 'playing' | 'paused' | 'gameover') => {
     gameStateRef.current = state
     setGameState(state)
+  }, [])
+
+  const clearSaucyCaught = useCallback(() => {
+    setSaucyCaught(false)
   }, [])
 
   // ---------- Canvas rendering ----------
@@ -142,7 +182,7 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
       ctx.stroke()
     }
 
-    // Food (pulsing — smooth at 60fps thanks to rAF)
+    // Regular food (pulsing — smooth at 60fps thanks to rAF)
     const food = foodRef.current
     const pulse = 0.85 + Math.sin(Date.now() / 200) * 0.15
     ctx.fillStyle = NOODLER.FOOD_COLOR
@@ -158,6 +198,25 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
     )
     ctx.fill()
     ctx.shadowBlur = 0
+
+    // Saucy meatball (faster pulse, red glow, slightly larger)
+    const saucy = saucyRef.current
+    if (saucy) {
+      const saucyPulse = 0.8 + Math.sin(Date.now() / 140) * 0.2
+      ctx.fillStyle = NOODLER.SAUCY_COLOR
+      ctx.shadowColor = NOODLER.SAUCY_COLOR
+      ctx.shadowBlur = 12
+      ctx.beginPath()
+      ctx.arc(
+        ox + saucy.position.x * cellSize + cellSize / 2,
+        oy + saucy.position.y * cellSize + cellSize / 2,
+        (cellSize / 2 - 1) * saucyPulse,
+        0,
+        Math.PI * 2
+      )
+      ctx.fill()
+      ctx.shadowBlur = 0
+    }
 
     // Snake
     const snake = snakeRef.current
@@ -215,7 +274,7 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
       y: head.y + (d === 'down' ? 1 : d === 'up' ? -1 : 0),
     }
 
-    // Wall collision → gameover (rAF loop stops automatically via gameStateRef check)
+    // Wall collision → gameover
     if (
       newHead.x < 0 || newHead.x >= NOODLER.GRID_COLS ||
       newHead.y < 0 || newHead.y >= NOODLER.GRID_ROWS
@@ -234,8 +293,6 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
     const ate = newHead.x === food.x && newHead.y === food.y
 
     // Self collision → gameover
-    // When NOT eating food, the tail is about to be popped this tick,
-    // so exclude it from collision — the cell it occupies will be free.
     const bodyToCheck = ate ? snake : snake.slice(0, -1)
     if (bodyToCheck.some(s => s.x === newHead.x && s.y === newHead.y)) {
       updateGameState('gameover')
@@ -255,10 +312,65 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
       setScore(scoreRef.current)
       foodRef.current = randomFood(newSnake)
       speedRef.current = Math.max(NOODLER.MIN_SPEED, speedRef.current - NOODLER.SPEED_INCREMENT)
+
+      // Maybe spawn saucy meatball
+      if (!saucyRef.current && Math.random() < NOODLER.SAUCY_SPAWN_CHANCE) {
+        const now = performance.now()
+        saucyRef.current = {
+          position: randomSaucyPosition(newSnake, foodRef.current),
+          direction: randomCardinalDirection(),
+          spawnTime: now,
+          lastMoveTime: now,
+        }
+      }
+    }
+
+    // Check saucy meatball collision
+    const saucy = saucyRef.current
+    if (saucy && newHead.x === saucy.position.x && newHead.y === saucy.position.y) {
+      saucyCountRef.current += 1
+      setSaucyCount(saucyCountRef.current)
+      setSaucyCaught(true)
+      saucyRef.current = null
     }
 
     snakeRef.current = newSnake
   }, [updateGameState])
+
+  // ---------- Saucy meatball movement + expiry (called from game loop) ----------
+
+  const updateSaucy = useCallback((timestamp: number) => {
+    const saucy = saucyRef.current
+    if (!saucy) return
+
+    // Expired?
+    if (timestamp - saucy.spawnTime > NOODLER.SAUCY_LIFETIME) {
+      saucyRef.current = null
+      return
+    }
+
+    // Time to move?
+    if (timestamp - saucy.lastMoveTime >= NOODLER.SAUCY_MOVE_INTERVAL) {
+      const d = saucy.direction
+      const newPos: Point = {
+        x: saucy.position.x + (d === 'right' ? 1 : d === 'left' ? -1 : 0),
+        y: saucy.position.y + (d === 'down' ? 1 : d === 'up' ? -1 : 0),
+      }
+
+      // Hit wall or snake → despawn
+      if (
+        newPos.x < 0 || newPos.x >= NOODLER.GRID_COLS ||
+        newPos.y < 0 || newPos.y >= NOODLER.GRID_ROWS ||
+        snakeRef.current.some(s => s.x === newPos.x && s.y === newPos.y)
+      ) {
+        saucyRef.current = null
+        return
+      }
+
+      saucy.position = newPos
+      saucy.lastMoveTime = timestamp
+    }
+  }, [])
 
   // ---------- rAF game loop ----------
 
@@ -277,11 +389,13 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
       return
     }
 
+    // Update saucy meatball movement + expiry
+    updateSaucy(timestamp)
+
     const elapsed = timestamp - lastTickTimeRef.current
     const speed = speedRef.current
 
     // Early tick if direction changed and ≥30% of interval elapsed
-    // This makes swipe/key input feel near-instant (~45ms worst case at 150ms speed)
     const earlyTick = dirChangedRef.current && elapsed >= speed * 0.3
 
     if (elapsed >= speed || earlyTick) {
@@ -297,10 +411,9 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
     if (gameStateRef.current === 'playing') {
       rafRef.current = requestAnimationFrame(gameLoop)
     } else {
-      // Final render already done above, just stop
       rafRef.current = null
     }
-  }, [doTick, renderCanvas])
+  }, [doTick, renderCanvas, updateSaucy])
 
   const startLoop = useCallback(() => {
     stopLoop()
@@ -317,7 +430,10 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
     nextDirRef.current = NOODLER.INITIAL_DIRECTION
     speedRef.current = NOODLER.INITIAL_SPEED
     scoreRef.current = 0
+    saucyCountRef.current = 0
+    saucyRef.current = null
     setScore(0)
+    setSaucyCount(0)
     updateGameState('playing')
     startLoop()
   }, [startLoop, updateGameState])
@@ -328,6 +444,12 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
   }, [stopLoop, updateGameState])
 
   const resume = useCallback(() => {
+    // Reset saucy timing so it doesn't immediately expire after pause
+    if (saucyRef.current) {
+      const pauseDuration = performance.now() - (saucyRef.current.lastMoveTime || 0)
+      saucyRef.current.spawnTime += pauseDuration
+      saucyRef.current.lastMoveTime = performance.now()
+    }
     updateGameState('playing')
     startLoop()
   }, [startLoop, updateGameState])
@@ -341,7 +463,7 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
     // Prevent reversing into yourself
     if (OPPOSITE_DIRECTION[dir] !== dirRef.current) {
       nextDirRef.current = dir
-      dirChangedRef.current = true  // signals rAF loop to tick early
+      dirChangedRef.current = true
     }
   }, [])
 
@@ -351,6 +473,7 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
     direction: dirRef.current,
     score: scoreRef.current,
     speed: speedRef.current,
+    saucyCount: saucyCountRef.current,
   }), [])
 
   // ---------- Keyboard ----------
@@ -370,7 +493,6 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
 
       if (e.key === ' ') {
         e.preventDefault()
-        // Read from ref so this handler never goes stale
         const state = gameStateRef.current
         if (state === 'playing') pause()
         else if (state === 'paused') resume()
@@ -392,6 +514,9 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
     gameState,
     score,
     highScore,
+    saucyCount,
+    saucyCaught,
+    clearSaucyCaught,
     start,
     pause,
     resume,

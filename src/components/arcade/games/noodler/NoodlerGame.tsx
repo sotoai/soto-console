@@ -1,10 +1,11 @@
 'use client'
 
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Pause, Play, Maximize2, Minimize2 } from 'lucide-react'
 import { useDrag } from '@use-gesture/react'
 import { useNoodlerEngine, type NoodlerSnapshot } from './useNoodlerEngine'
+import { NOODLER_EMOJIS } from './noodler-config'
 import type { Direction } from './noodler-config'
 import type { GameComponentProps } from '../types'
 
@@ -12,6 +13,78 @@ interface NoodlerGameProps extends GameComponentProps {
   initialState?: NoodlerSnapshot
   onStateChange?: (snapshot: NoodlerSnapshot) => void
 }
+
+// ─── Saucy Meatball Celebration ───
+
+interface EmojiParticle {
+  id: number
+  emoji: string
+  x: number       // % from left
+  delay: number    // seconds
+  duration: number // seconds
+}
+
+function SaucyCelebration({ onComplete }: { onComplete: () => void }) {
+  const particles = useMemo<EmojiParticle[]>(() => {
+    return Array.from({ length: 14 }, (_, i) => ({
+      id: i,
+      emoji: NOODLER_EMOJIS[Math.floor(Math.random() * NOODLER_EMOJIS.length)],
+      x: 5 + Math.random() * 90,
+      delay: Math.random() * 0.6,
+      duration: 1.6 + Math.random() * 0.8,
+    }))
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 2800)
+    return () => clearTimeout(timer)
+  }, [onComplete])
+
+  return (
+    <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center"
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1.1, 1, 1] }}
+        transition={{ duration: 2, times: [0, 0.15, 0.7, 1] }}
+      >
+        <span
+          className="text-[28px] md:text-[42px] font-black tracking-tighter"
+          style={{
+            color: '#EF4444',
+            textShadow: '0 0 20px rgba(239,68,68,0.7), 0 0 40px rgba(239,68,68,0.4), 0 2px 4px rgba(0,0,0,0.5)',
+          }}
+        >
+          Saucy Meatball!
+        </span>
+      </motion.div>
+
+      {particles.map(p => (
+        <motion.span
+          key={p.id}
+          className="absolute text-[20px] md:text-[26px]"
+          style={{ left: `${p.x}%`, bottom: -40 }}
+          initial={{ y: 0, opacity: 0 }}
+          animate={{
+            y: -500,
+            opacity: [0, 1, 1, 0],
+            x: [0, (Math.random() - 0.5) * 40],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            ease: 'easeOut',
+            opacity: { duration: p.duration, times: [0, 0.1, 0.7, 1] },
+          }}
+        >
+          {p.emoji}
+        </motion.span>
+      ))}
+    </div>
+  )
+}
+
+// ─── Main component ───
 
 export function NoodlerGame({
   isFullscreen,
@@ -30,6 +103,9 @@ export function NoodlerGame({
     gameState,
     score,
     highScore,
+    saucyCount,
+    saucyCaught,
+    clearSaucyCaught,
     start,
     pause,
     resume,
@@ -38,6 +114,16 @@ export function NoodlerGame({
     render,
     getSnapshot,
   } = useNoodlerEngine(initialState)
+
+  const [showSaucyCelebration, setShowSaucyCelebration] = useState(false)
+
+  // Trigger saucy celebration
+  useEffect(() => {
+    if (saucyCaught) {
+      setShowSaucyCelebration(true)
+      clearSaucyCaught()
+    }
+  }, [saucyCaught, clearSaucyCaught])
 
   // Observe container size and re-render canvas
   useEffect(() => {
@@ -140,6 +226,11 @@ export function NoodlerGame({
           <span className="text-[13px] font-mono tabular-nums font-semibold text-[var(--wp-text)]">
             {score}
           </span>
+          {saucyCount > 0 && (
+            <span className="text-[11px] font-mono tabular-nums text-red-400 flex items-center gap-0.5">
+              🌶️ {saucyCount}
+            </span>
+          )}
           <span className="text-[11px] font-mono tabular-nums text-[var(--wp-text-tertiary)]">
             HI {highScore}
           </span>
@@ -188,6 +279,13 @@ export function NoodlerGame({
           ref={canvasRef}
           className="absolute inset-0"
         />
+
+        {/* Saucy Meatball celebration */}
+        <AnimatePresence>
+          {showSaucyCelebration && (
+            <SaucyCelebration onComplete={() => setShowSaucyCelebration(false)} />
+          )}
+        </AnimatePresence>
 
         {/* Idle overlay */}
         <AnimatePresence>
@@ -252,6 +350,11 @@ export function NoodlerGame({
                 <p className="text-[32px] md:text-[40px] font-bold text-green-400 tabular-nums mb-1">
                   {score}
                 </p>
+                {saucyCount > 0 && (
+                  <p className="text-[13px] text-red-400 font-mono tabular-nums mb-2">
+                    🌶️ × {saucyCount} Saucy Meatball{saucyCount !== 1 ? 's' : ''}
+                  </p>
+                )}
                 {score >= highScore && score > 0 && (
                   <p className="text-[11px] font-semibold text-orange-400 uppercase tracking-wider mb-3">
                     New High Score!
