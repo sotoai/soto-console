@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
   const gameId = searchParams.get('gameId')
   const limit = Math.min(Number(searchParams.get('limit') || 10), 50)
   const me = searchParams.get('me')
+  const sortBy = searchParams.get('sortBy') === 'spicy' ? 'spicy' as const : 'score' as const
 
   // Personal best lookup — resolve from authenticated session
   if (me && gameId) {
@@ -29,8 +30,8 @@ export async function GET(request: NextRequest) {
 
   // Game-specific or global leaderboard
   const entries = gameId
-    ? getTopScores(gameId, limit)
-    : getGlobalTopScores(limit)
+    ? getTopScores(gameId, limit, sortBy)
+    : getGlobalTopScores(limit, sortBy)
 
   return NextResponse.json(entries)
 }

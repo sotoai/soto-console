@@ -25,12 +25,15 @@ const RANK_COLORS: Record<number, string> = {
 
 const playableGames = GAMES.filter(g => !g.comingSoon)
 
+type SortMode = 'score' | 'spicy'
+
 export function Leaderboard({ refreshTrigger, onlineUsers, isConnected, className, style }: LeaderboardProps) {
   const { user } = useUser()
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [gameFilter, setGameFilter] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [personalBest, setPersonalBest] = useState<{ score: number; spicy_count: number } | null>(null)
+  const [sortBy, setSortBy] = useState<SortMode>('score')
 
   const fetchScores = useCallback(async () => {
     setLoading(true)
@@ -38,6 +41,7 @@ export function Leaderboard({ refreshTrigger, onlineUsers, isConnected, classNam
       const params = new URLSearchParams()
       if (gameFilter) params.set('gameId', gameFilter)
       params.set('limit', '10')
+      params.set('sortBy', sortBy)
       const res = await fetch(`/api/scores?${params}`)
       if (res.ok) {
         const data = await res.json()
@@ -48,7 +52,7 @@ export function Leaderboard({ refreshTrigger, onlineUsers, isConnected, classNam
     } finally {
       setLoading(false)
     }
-  }, [gameFilter])
+  }, [gameFilter, sortBy])
 
   // Fetch personal best when filter or user changes
   useEffect(() => {
@@ -111,13 +115,13 @@ export function Leaderboard({ refreshTrigger, onlineUsers, isConnected, classNam
         </button>
       </div>
 
-      {/* Game filter */}
-      {playableGames.length > 0 && (
-        <div className="mb-3">
+      {/* Game filter + sort toggle row */}
+      <div className="flex items-center gap-2 mb-3">
+        {playableGames.length > 0 && (
           <select
             value={gameFilter}
             onChange={e => setGameFilter(e.target.value)}
-            className="w-full text-[12px] font-medium rounded-[var(--radius-sm)] px-2 py-1.5 cursor-pointer outline-none"
+            className="flex-1 min-w-0 text-[12px] font-medium rounded-[var(--radius-sm)] px-2 py-1.5 cursor-pointer outline-none"
             style={{
               background: 'rgba(255,255,255,0.08)',
               color: 'var(--wp-text-secondary)',
@@ -129,16 +133,62 @@ export function Leaderboard({ refreshTrigger, onlineUsers, isConnected, classNam
               <option key={g.id} value={g.id}>{g.emoji} {g.name}</option>
             ))}
           </select>
+        )}
+
+        {/* Sort toggle */}
+        <div
+          className="flex items-center shrink-0 rounded-[var(--radius-sm)] overflow-hidden"
+          style={{ border: '0.5px solid rgba(255,255,255,0.1)' }}
+        >
+          <button
+            onClick={() => setSortBy('score')}
+            className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider cursor-pointer transition-colors duration-150"
+            style={{
+              background: sortBy === 'score' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.04)',
+              color: sortBy === 'score' ? 'var(--wp-text)' : 'var(--wp-text-muted)',
+            }}
+          >
+            Score
+          </button>
+          <button
+            onClick={() => setSortBy('spicy')}
+            className="px-2 py-1.5 text-[10px] font-semibold cursor-pointer transition-colors duration-150"
+            style={{
+              background: sortBy === 'spicy' ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.04)',
+              color: sortBy === 'spicy' ? '#f87171' : 'var(--wp-text-muted)',
+            }}
+          >
+            🌶️
+          </button>
         </div>
-      )}
+      </div>
 
       {/* Online users */}
       {onlineUsers && onlineUsers.length > 0 && (
         <OnlineUsers users={onlineUsers} />
       )}
 
+      {/* Column headers */}
+      <div className="flex items-center gap-2 px-2 pb-1 mb-1" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
+        <span className="text-[9px] font-semibold uppercase tracking-wider text-[var(--wp-text-muted)] shrink-0" style={{ width: 20, textAlign: 'center' }}>#</span>
+        <span className="text-[9px] font-semibold uppercase tracking-wider text-[var(--wp-text-muted)] shrink-0" style={{ width: 24 }} />
+        <span className="text-[9px] font-semibold uppercase tracking-wider text-[var(--wp-text-muted)] flex-1 min-w-0">Player</span>
+        <span
+          className="text-[9px] font-semibold uppercase tracking-wider shrink-0 text-right"
+          style={{ color: sortBy === 'score' ? 'var(--wp-text-secondary)' : 'var(--wp-text-muted)', width: 48 }}
+        >
+          Score
+        </span>
+        <span
+          className="text-[9px] font-semibold shrink-0 text-right"
+          style={{ color: sortBy === 'spicy' ? '#f87171' : 'var(--wp-text-muted)', width: 28 }}
+        >
+          🌶️
+        </span>
+      </div>
+
       {/* Scores list */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-1">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5">
         {entries.length === 0 && !loading && (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <p className="text-[24px] mb-2">🏆</p>
@@ -229,23 +279,31 @@ export function Leaderboard({ refreshTrigger, onlineUsers, isConnected, classNam
                 )}
               </div>
 
-              {/* Score + spicy count */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span
-                  className="text-[13px] font-mono font-bold tabular-nums"
-                  style={{
-                    color: 'var(--wp-text)',
-                    textShadow: 'var(--wp-shadow)',
-                  }}
-                >
-                  {entry.score.toLocaleString()}
-                </span>
-                {entry.spicy_count > 0 && (
-                  <span className="text-[10px] text-red-400 tabular-nums font-mono">
-                    🌶️{entry.spicy_count}
-                  </span>
-                )}
-              </div>
+              {/* Score */}
+              <span
+                className="text-[13px] font-mono font-bold tabular-nums shrink-0 text-right"
+                style={{
+                  color: sortBy === 'score' ? 'var(--wp-text)' : 'var(--wp-text-tertiary)',
+                  textShadow: sortBy === 'score' ? 'var(--wp-shadow)' : undefined,
+                  width: 48,
+                }}
+              >
+                {entry.score.toLocaleString()}
+              </span>
+
+              {/* Spicy count */}
+              <span
+                className="text-[12px] font-mono font-bold tabular-nums shrink-0 text-right"
+                style={{
+                  color: entry.spicy_count > 0
+                    ? (sortBy === 'spicy' ? '#f87171' : '#f87171')
+                    : 'var(--wp-text-muted)',
+                  opacity: entry.spicy_count > 0 ? 1 : 0.3,
+                  width: 28,
+                }}
+              >
+                {entry.spicy_count > 0 ? entry.spicy_count : '–'}
+              </span>
             </div>
           )
         })}
@@ -263,7 +321,7 @@ export function Leaderboard({ refreshTrigger, onlineUsers, isConnected, classNam
           >
             Your Best
           </span>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-3">
             <span
               className="text-[14px] font-mono font-bold tabular-nums"
               style={{ color: 'var(--wp-text)', textShadow: 'var(--wp-shadow)' }}
@@ -271,7 +329,7 @@ export function Leaderboard({ refreshTrigger, onlineUsers, isConnected, classNam
               {personalBest.score.toLocaleString()}
             </span>
             {personalBest.spicy_count > 0 && (
-              <span className="text-[10px] text-red-400 tabular-nums font-mono">
+              <span className="text-[12px] text-red-400 tabular-nums font-mono font-bold">
                 🌶️{personalBest.spicy_count}
               </span>
             )}

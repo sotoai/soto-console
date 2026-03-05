@@ -24,6 +24,9 @@ export function initScoreSchema(database: Database.Database) {
   } catch {
     // Column already exists — ignore
   }
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_scores_game_spicy ON scores(game_id, spicy_count DESC)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_scores_spicy ON scores(spicy_count DESC)`)
 }
 
 export function submitScore(userId: string, gameId: string, score: number, spicyCount = 0): Score {
@@ -36,7 +39,8 @@ export function submitScore(userId: string, gameId: string, score: number, spicy
   return db.prepare('SELECT * FROM scores WHERE id = ?').get(id) as Score
 }
 
-export function getTopScores(gameId: string, limit = 10): LeaderboardEntry[] {
+export function getTopScores(gameId: string, limit = 10, sortBy: 'score' | 'spicy' = 'score'): LeaderboardEntry[] {
+  const orderCol = sortBy === 'spicy' ? 's.spicy_count' : 's.score'
   return db.prepare(`
     SELECT
       s.*,
@@ -46,12 +50,13 @@ export function getTopScores(gameId: string, limit = 10): LeaderboardEntry[] {
     FROM scores s
     JOIN users u ON s.user_id = u.id
     WHERE s.game_id = ?
-    ORDER BY s.score DESC
+    ORDER BY ${orderCol} DESC
     LIMIT ?
   `).all(gameId, limit) as LeaderboardEntry[]
 }
 
-export function getGlobalTopScores(limit = 10): LeaderboardEntry[] {
+export function getGlobalTopScores(limit = 10, sortBy: 'score' | 'spicy' = 'score'): LeaderboardEntry[] {
+  const orderCol = sortBy === 'spicy' ? 's.spicy_count' : 's.score'
   return db.prepare(`
     SELECT
       s.*,
@@ -60,7 +65,7 @@ export function getGlobalTopScores(limit = 10): LeaderboardEntry[] {
       s.game_id AS game_name
     FROM scores s
     JOIN users u ON s.user_id = u.id
-    ORDER BY s.score DESC
+    ORDER BY ${orderCol} DESC
     LIMIT ?
   `).all(limit) as LeaderboardEntry[]
 }
