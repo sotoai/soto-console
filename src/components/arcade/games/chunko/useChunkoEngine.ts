@@ -44,6 +44,7 @@ export interface ChunkoSnapshot {
   level: number
   lines: number
   bag: PieceType[]
+  chunkoCount: number
 }
 
 interface EngineReturn {
@@ -55,6 +56,7 @@ interface EngineReturn {
   highScore: number
   nextType: PieceType
   chunkoFired: boolean
+  chunkoCount: number
   clearChunko: () => void
   start: () => void
   pause: () => void
@@ -153,6 +155,8 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
   const [highScore, setHighScore] = useState(getStoredHighScore)
   const [nextType, setNextType] = useState<PieceType>(initialState?.nextType ?? 'I')
   const [chunkoFired, setChunkoFired] = useState(false)
+  const chunkoCountRef = useRef(initialState?.chunkoCount ?? 0)
+  const [chunkoCount, setChunkoCount] = useState(initialState?.chunkoCount ?? 0)
 
   const updateGameState = useCallback((state: 'idle' | 'playing' | 'paused' | 'gameover') => {
     gameStateRef.current = state
@@ -315,6 +319,8 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
 
       // CHUNKO! — 4 lines at once
       if (cleared === 4) {
+        chunkoCountRef.current += 1
+        setChunkoCount(chunkoCountRef.current)
         setChunkoFired(true)
       }
     }
@@ -536,6 +542,8 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
     setLevel(1)
     setLinesCleared(0)
     setChunkoFired(false)
+    chunkoCountRef.current = 0
+    setChunkoCount(0)
 
     // Spawn first piece
     const type = bagRef.current.pop()!
@@ -597,6 +605,7 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
     level: levelRef.current,
     lines: linesRef.current,
     bag: [...bagRef.current],
+    chunkoCount: chunkoCountRef.current,
   }), [])
 
   // ─── Keyboard ───
@@ -664,6 +673,7 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
     highScore,
     nextType,
     chunkoFired,
+    chunkoCount,
     clearChunko,
     start,
     pause,

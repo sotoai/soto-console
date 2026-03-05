@@ -30,7 +30,7 @@ export function Leaderboard({ refreshTrigger, onlineUsers, isConnected, classNam
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [gameFilter, setGameFilter] = useState<string>('')
   const [loading, setLoading] = useState(true)
-  const [personalBest, setPersonalBest] = useState<number | null>(null)
+  const [personalBest, setPersonalBest] = useState<{ score: number; spicy_count: number } | null>(null)
 
   const fetchScores = useCallback(async () => {
     setLoading(true)
@@ -58,7 +58,7 @@ export function Leaderboard({ refreshTrigger, onlineUsers, isConnected, classNam
     }
     fetch(`/api/scores?me=true&gameId=${gameFilter}`)
       .then(r => r.ok ? r.json() : null)
-      .then(data => setPersonalBest(data?.score ?? null))
+      .then(data => setPersonalBest(data ? { score: data.score, spicy_count: data.spicy_count ?? 0 } : null))
       .catch(() => setPersonalBest(null))
   }, [user?.id, gameFilter, refreshTrigger])
 
@@ -229,16 +229,23 @@ export function Leaderboard({ refreshTrigger, onlineUsers, isConnected, classNam
                 )}
               </div>
 
-              {/* Score */}
-              <span
-                className="text-[13px] font-mono font-bold tabular-nums shrink-0"
-                style={{
-                  color: 'var(--wp-text)',
-                  textShadow: 'var(--wp-shadow)',
-                }}
-              >
-                {entry.score.toLocaleString()}
-              </span>
+              {/* Score + spicy count */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span
+                  className="text-[13px] font-mono font-bold tabular-nums"
+                  style={{
+                    color: 'var(--wp-text)',
+                    textShadow: 'var(--wp-shadow)',
+                  }}
+                >
+                  {entry.score.toLocaleString()}
+                </span>
+                {entry.spicy_count > 0 && (
+                  <span className="text-[10px] text-red-400 tabular-nums font-mono">
+                    🌶️{entry.spicy_count}
+                  </span>
+                )}
+              </div>
             </div>
           )
         })}
@@ -256,12 +263,19 @@ export function Leaderboard({ refreshTrigger, onlineUsers, isConnected, classNam
           >
             Your Best
           </span>
-          <span
-            className="text-[14px] font-mono font-bold tabular-nums"
-            style={{ color: 'var(--wp-text)', textShadow: 'var(--wp-shadow)' }}
-          >
-            {personalBest.toLocaleString()}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span
+              className="text-[14px] font-mono font-bold tabular-nums"
+              style={{ color: 'var(--wp-text)', textShadow: 'var(--wp-shadow)' }}
+            >
+              {personalBest.score.toLocaleString()}
+            </span>
+            {personalBest.spicy_count > 0 && (
+              <span className="text-[10px] text-red-400 tabular-nums font-mono">
+                🌶️{personalBest.spicy_count}
+              </span>
+            )}
+          </div>
         </div>
       )}
     </div>

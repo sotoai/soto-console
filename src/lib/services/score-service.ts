@@ -17,15 +17,22 @@ export function initScoreSchema(database: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_scores_game_score ON scores(game_id, score DESC);
     CREATE INDEX IF NOT EXISTS idx_scores_user_game ON scores(user_id, game_id);
   `)
+
+  // Migration: add spicy_count column if not present
+  try {
+    db.exec(`ALTER TABLE scores ADD COLUMN spicy_count INTEGER NOT NULL DEFAULT 0`)
+  } catch {
+    // Column already exists — ignore
+  }
 }
 
-export function submitScore(userId: string, gameId: string, score: number): Score {
+export function submitScore(userId: string, gameId: string, score: number, spicyCount = 0): Score {
   const id = crypto.randomUUID()
   const stmt = db.prepare(`
-    INSERT INTO scores (id, user_id, game_id, score)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO scores (id, user_id, game_id, score, spicy_count)
+    VALUES (?, ?, ?, ?, ?)
   `)
-  stmt.run(id, userId, gameId, score)
+  stmt.run(id, userId, gameId, score, spicyCount)
   return db.prepare('SELECT * FROM scores WHERE id = ?').get(id) as Score
 }
 

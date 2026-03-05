@@ -157,12 +157,12 @@ export function NoodlerGame({
   useEffect(() => {
     if (gameState === 'gameover' && score > 0 && !scoreSubmittedRef.current) {
       scoreSubmittedRef.current = true
-      onScoreSubmit?.('noodler', score)
+      onScoreSubmit?.('noodler', score, saucyCount)
     }
     if (gameState === 'playing') {
       scoreSubmittedRef.current = false
     }
-  }, [gameState, score, onScoreSubmit])
+  }, [gameState, score, saucyCount, onScoreSubmit])
 
   const handleCanvasTap = useCallback(() => {
     if (gameState === 'idle') start()

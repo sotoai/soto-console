@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   getDb() // ensure schemas are initialized
   try {
     const user = await getAuthUser()
-    const { gameId, score } = await request.json()
+    const { gameId, score, spicyCount = 0 } = await request.json()
 
     if (!gameId || typeof score !== 'number' || score <= 0) {
       return NextResponse.json({ error: 'Invalid gameId or score' }, { status: 400 })
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Score exceeds maximum' }, { status: 400 })
     }
 
-    const entry = submitScore(user.id, gameId, score)
+    const entry = submitScore(user.id, gameId, score, spicyCount)
 
     // Notify all connected clients in real-time
     broadcast('leaderboard-update', { gameId })

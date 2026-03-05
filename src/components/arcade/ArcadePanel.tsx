@@ -39,8 +39,8 @@ export function ArcadePanel({ className, style, onScoreSubmitted }: ArcadePanelP
   }, [])
 
   // Forward score submissions to parent for leaderboard refresh
-  const handleScoreSubmit = useCallback(async (gameId: string, score: number) => {
-    await submitScore(gameId, score)
+  const handleScoreSubmit = useCallback(async (gameId: string, score: number, spicyCount?: number) => {
+    await submitScore(gameId, score, spicyCount ?? 0)
     onScoreSubmitted?.(Date.now())
   }, [submitScore, onScoreSubmitted])
 

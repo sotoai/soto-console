@@ -110,6 +110,7 @@ export function ChunkoGame({
     highScore,
     nextType,
     chunkoFired,
+    chunkoCount,
     clearChunko,
     start,
     pause,
@@ -152,13 +153,13 @@ export function ChunkoGame({
   useEffect(() => {
     if (gameState === 'gameover' && score > 0 && !scoreSubmittedRef.current) {
       scoreSubmittedRef.current = true
-      onScoreSubmit?.('chunko', score)
+      onScoreSubmit?.('chunko', score, chunkoCount)
       setLeaderboardRefresh(prev => prev + 1)
     }
     if (gameState === 'playing') {
       scoreSubmittedRef.current = false
     }
-  }, [gameState, score, onScoreSubmit])
+  }, [gameState, score, chunkoCount, onScoreSubmit])
 
   // Trigger celebration
   useEffect(() => {

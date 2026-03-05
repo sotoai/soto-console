@@ -3,6 +3,7 @@ export interface Score {
   user_id: string
   game_id: string
   score: number
+  spicy_count: number
   created_at: string
 }
 
