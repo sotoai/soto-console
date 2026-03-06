@@ -9,6 +9,7 @@ import { QuoteRotator } from '@/components/homescreen/QuoteRotator'
 import { SmartHomePage } from '@/components/smarthome/SmartHomePage'
 import { WorldMap } from '@/components/map/WorldMap'
 import { AppDock } from '@/components/shell/AppDock'
+import { AppLauncher } from '@/components/shell/AppLauncher'
 import { SwipeablePages } from '@/components/shell/SwipeablePages'
 import { PageIndicator } from '@/components/shell/PageIndicator'
 import { useRealtimeEvents } from '@/hooks/useRealtimeEvents'
@@ -44,6 +45,9 @@ export default function HomePage() {
         {/* Swipeable page area */}
         <div className="flex-1 min-h-0">
           <SwipeablePages currentPage={currentPage} onPageChange={setCurrentPage}>
+            {/* Page 0: App Launcher */}
+            <AppLauncher />
+
             {/* Page 1: Calendar + Upcoming Events + Quote */}
             <div
               className="h-full flex flex-col items-center justify-start overflow-y-auto md:overflow-hidden"
@@ -112,7 +116,7 @@ export default function HomePage() {
 
         {/* Page dots */}
         <PageIndicator
-          total={4}
+          total={5}
           current={currentPage}
           onPageSelect={setCurrentPage}
         />
