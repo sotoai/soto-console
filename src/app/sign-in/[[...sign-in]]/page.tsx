@@ -5,6 +5,7 @@ export default function SignInPage() {
     <div className="h-[100dvh] w-screen flex items-center justify-center bg-[var(--bg-primary)]">
       <div className="animate-fade-in">
         <SignIn
+          forceRedirectUrl="/"
           appearance={{
             elements: {
               rootBox: 'mx-auto',
