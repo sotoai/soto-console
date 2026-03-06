@@ -6,6 +6,10 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'HomeBase',
   description: 'Your household command center.',
+  icons: {
+    icon: '/favicon.png',
+    apple: '/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
