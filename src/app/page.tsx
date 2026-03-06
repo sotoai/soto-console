@@ -50,15 +50,15 @@ export default function HomePage() {
               style={{ padding: 'var(--shell-padding-top) var(--shell-padding-x) 0.5rem' }}
             >
               <div
-                className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_320px] animate-fade-in md:flex-1 md:min-h-0 md:overflow-hidden rounded-[var(--radius-lg)]"
+                className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_320px] animate-fade-in md:flex-1 md:min-h-0"
                 style={{ gap: 'var(--shell-gap)' }}
               >
                 <CalendarWidget
-                  className="rounded-[var(--radius-lg)] bg-[var(--wallpaper-card-bg)] p-4 md:p-5 flex flex-col"
+                  className="rounded-[var(--radius-lg)] bg-[var(--wallpaper-card-bg)] p-4 md:p-5 flex flex-col min-h-0 overflow-hidden"
                   style={glassStyle}
                 />
                 <UpcomingEvents
-                  className="rounded-[var(--radius-lg)] bg-[var(--wallpaper-card-bg)] p-4 md:p-5 flex flex-col"
+                  className="rounded-[var(--radius-lg)] bg-[var(--wallpaper-card-bg)] p-4 md:p-5 flex flex-col min-h-0 overflow-hidden"
                   style={glassStyle}
                 />
               </div>
