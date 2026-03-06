@@ -1,12 +1,15 @@
 // ─── Launcher App Definitions ───
 
+import type { ComponentType } from 'react'
+
 export interface LauncherApp {
   id: string
   name: string
   emoji: string
   gradient: string
   status: 'live' | 'coming-soon'
-  url?: string           // future: external URL or internal route
+  url?: string                                     // external URL
+  component?: ComponentType<{ onClose: () => void }>  // fullscreen overlay component
 }
 
 export const launcherApps: LauncherApp[] = [
@@ -29,6 +32,7 @@ export const launcherApps: LauncherApp[] = [
     name: 'Screaming Chicken',
     emoji: '🐔',
     gradient: 'from-yellow-400 to-orange-500',
-    status: 'coming-soon',
+    status: 'live',
+    // component is lazy-loaded in AppLauncher to avoid SSR issues
   },
 ]

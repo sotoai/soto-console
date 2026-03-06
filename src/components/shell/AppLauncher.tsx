@@ -1,12 +1,24 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, lazy, Suspense } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { launcherApps, type LauncherApp } from '@/config/launcher-apps'
 
-function AppIcon({ app }: { app: LauncherApp }) {
+// Lazy-load app components
+const appComponents: Record<string, React.ComponentType<{ onClose: () => void }>> = {
+  'screaming-chicken': lazy(() => import('@/components/apps/ScreamingChickenApp')),
+}
+
+function AppIcon({ app, onOpen }: { app: LauncherApp; onOpen: (id: string) => void }) {
   const [showBadge, setShowBadge] = useState(false)
 
   const handleTap = useCallback(() => {
+    // Has a built-in component → open as overlay
+    if (app.status === 'live' && appComponents[app.id]) {
+      onOpen(app.id)
+      return
+    }
+    // Has an external URL → open in new tab
     if (app.status === 'live' && app.url) {
       window.open(app.url, '_blank')
       return
@@ -14,7 +26,7 @@ function AppIcon({ app }: { app: LauncherApp }) {
     // Coming soon pulse
     setShowBadge(true)
     setTimeout(() => setShowBadge(false), 1400)
-  }, [app])
+  }, [app, onOpen])
 
   return (
     <button
@@ -72,24 +84,56 @@ function AppIcon({ app }: { app: LauncherApp }) {
 }
 
 export function AppLauncher() {
+  const [openAppId, setOpenAppId] = useState<string | null>(null)
+
+  const handleOpen = useCallback((id: string) => setOpenAppId(id), [])
+  const handleClose = useCallback(() => setOpenAppId(null), [])
+
+  const ActiveComponent = openAppId ? appComponents[openAppId] : null
+
   return (
-    <div
-      className="h-full flex items-center justify-center"
-      style={{ padding: 'var(--shell-padding-top) var(--shell-padding-x)' }}
-    >
+    <>
       <div
-        className="grid animate-fade-in stagger"
-        style={{
-          gridTemplateColumns: `repeat(auto-fit, var(--launcher-icon-size))`,
-          gap: 'var(--launcher-gap)',
-          justifyContent: 'center',
-          maxWidth: '400px',
-        }}
+        className="h-full flex items-center justify-center"
+        style={{ padding: 'var(--shell-padding-top) var(--shell-padding-x)' }}
       >
-        {launcherApps.map(app => (
-          <AppIcon key={app.id} app={app} />
-        ))}
+        <div
+          className="grid animate-fade-in stagger"
+          style={{
+            gridTemplateColumns: `repeat(auto-fit, var(--launcher-icon-size))`,
+            gap: 'var(--launcher-gap)',
+            justifyContent: 'center',
+            maxWidth: '400px',
+          }}
+        >
+          {launcherApps.map(app => (
+            <AppIcon key={app.id} app={app} onOpen={handleOpen} />
+          ))}
+        </div>
       </div>
-    </div>
+
+      {/* Fullscreen app overlay */}
+      <AnimatePresence>
+        {ActiveComponent && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="fixed inset-0 z-50"
+          >
+            <Suspense
+              fallback={
+                <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
+                  <span className="text-white/50 text-sm">Loading...</span>
+                </div>
+              }
+            >
+              <ActiveComponent onClose={handleClose} />
+            </Suspense>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }
