@@ -231,6 +231,11 @@ export function ChunkoGame({
           <span className="md:hidden text-[13px] font-mono tabular-nums font-semibold text-[var(--wp-text)]">
             {score.toLocaleString()}
           </span>
+          {chunkoCount > 0 && (
+            <span className="text-[11px] font-mono tabular-nums text-red-400 flex items-center gap-0.5">
+              🌶️ {chunkoCount}
+            </span>
+          )}
           <span className="md:hidden text-[11px] font-mono tabular-nums text-[var(--wp-text-tertiary)]">
             LV {level}
           </span>
@@ -354,6 +359,11 @@ export function ChunkoGame({
                     <p className="text-[32px] md:text-[40px] font-bold text-cyan-400 tabular-nums mb-1">
                       {score.toLocaleString()}
                     </p>
+                    {chunkoCount > 0 && (
+                      <p className="text-[13px] text-red-400 font-mono tabular-nums mb-2">
+                        🌶️ × {chunkoCount} Chunko{chunkoCount !== 1 ? 's' : ''}
+                      </p>
+                    )}
                     {score >= highScore && score > 0 && (
                       <p className="text-[11px] font-semibold text-orange-400 uppercase tracking-wider mb-3">
                         New High Score!

@@ -80,7 +80,7 @@ export const PIECE_HIGHLIGHT: Record<PieceType, string> = {
 export const BG_COLOR = '#0a0a1a'
 export const GRID_LINE_COLOR = 'rgba(255,255,255,0.03)'
 export const GHOST_ALPHA = 0.2
-export const BORDER_COLOR = 'rgba(255,255,255,0.06)'
+export const BORDER_COLOR = 'rgba(255,255,255,0.35)'
 
 // ─── Speed & timing ───
 export const INITIAL_SPEED = 800   // ms per gravity tick at level 1

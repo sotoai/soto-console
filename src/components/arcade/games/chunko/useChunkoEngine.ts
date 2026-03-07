@@ -387,8 +387,8 @@ export function useChunkoEngine(initialState?: ChunkoSnapshot): EngineReturn {
 
     // Border
     ctx.strokeStyle = BORDER_COLOR
-    ctx.lineWidth = 1
-    ctx.strokeRect(ox, oy, gridW, gridH)
+    ctx.lineWidth = 2.5
+    ctx.strokeRect(ox - 1, oy - 1, gridW + 2, gridH + 2)
 
     // Helper to draw a cell
     const drawCell = (r: number, c: number, color: string, highlight: string, alpha = 1) => {
