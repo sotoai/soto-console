@@ -184,8 +184,8 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
 
     // Border around play area
     ctx.strokeStyle = NOODLER.BORDER_COLOR
-    ctx.lineWidth = 1.5
-    ctx.strokeRect(ox - 0.5, oy - 0.5, gridW + 1, gridH + 1)
+    ctx.lineWidth = 2.5
+    ctx.strokeRect(ox - 1, oy - 1, gridW + 2, gridH + 2)
 
     // Regular food (pulsing — smooth at 60fps thanks to rAF)
     const food = foodRef.current

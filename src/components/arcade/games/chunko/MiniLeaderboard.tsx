@@ -12,6 +12,7 @@ interface ScoreEntry {
 }
 
 interface MiniLeaderboardProps {
+  gameId?: string
   refreshTrigger?: number
   className?: string
 }
@@ -22,7 +23,7 @@ const RANK_COLORS: Record<number, string> = {
   3: '#CD7F32', // bronze
 }
 
-export function MiniLeaderboard({ refreshTrigger = 0, className = '' }: MiniLeaderboardProps) {
+export function MiniLeaderboard({ gameId = 'chunko', refreshTrigger = 0, className = '' }: MiniLeaderboardProps) {
   const { user } = useUser()
   const [entries, setEntries] = useState<ScoreEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,7 +33,7 @@ export function MiniLeaderboard({ refreshTrigger = 0, className = '' }: MiniLead
 
     async function fetchScores() {
       try {
-        const res = await fetch('/api/scores?gameId=chunko&limit=5')
+        const res = await fetch(`/api/scores?gameId=${gameId}&limit=5`)
         if (!res.ok) return
         const data = await res.json()
         if (!cancelled) setEntries(data)
@@ -45,7 +46,7 @@ export function MiniLeaderboard({ refreshTrigger = 0, className = '' }: MiniLead
 
     fetchScores()
     return () => { cancelled = true }
-  }, [refreshTrigger])
+  }, [gameId, refreshTrigger])
 
   return (
     <div className={`flex flex-col py-2 ${className}`}>

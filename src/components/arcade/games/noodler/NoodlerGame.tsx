@@ -8,6 +8,7 @@ import { useNoodlerEngine, type NoodlerSnapshot } from './useNoodlerEngine'
 import { NOODLER_EMOJIS } from './noodler-config'
 import type { Direction } from './noodler-config'
 import type { GameComponentProps } from '../types'
+import { MiniLeaderboard } from '../chunko/MiniLeaderboard'
 
 interface NoodlerGameProps extends GameComponentProps {
   initialState?: NoodlerSnapshot
@@ -97,6 +98,7 @@ export function NoodlerGame({
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasContainerRef = useRef<HTMLDivElement>(null)
   const scoreSubmittedRef = useRef(false)
+  const [leaderboardRefresh, setLeaderboardRefresh] = useState(0)
 
   const {
     canvasRef,
@@ -158,6 +160,7 @@ export function NoodlerGame({
     if (gameState === 'gameover' && score > 0 && !scoreSubmittedRef.current) {
       scoreSubmittedRef.current = true
       onScoreSubmit?.('noodler', score, saucyCount)
+      setLeaderboardRefresh(prev => prev + 1)
     }
     if (gameState === 'playing') {
       scoreSubmittedRef.current = false
@@ -304,9 +307,14 @@ export function NoodlerGame({
                 <p className="text-[18px] md:text-[22px] font-bold text-white/90 mb-1 tracking-tight">
                   Noodler
                 </p>
-                <p className="text-[12px] text-white/40 font-medium">
+                <p className="text-[12px] text-white/40 font-medium mb-4">
                   Tap to play
                 </p>
+                <MiniLeaderboard
+                  gameId="noodler"
+                  refreshTrigger={leaderboardRefresh}
+                  className="w-48 mx-auto"
+                />
               </div>
             </motion.div>
           )}
@@ -337,13 +345,13 @@ export function NoodlerGame({
         <AnimatePresence>
           {gameState === 'gameover' && (
             <motion.div
-              className="absolute inset-0 flex items-center justify-center z-10 bg-black/60"
+              className="absolute inset-0 flex items-center justify-center z-10 bg-black/60 overflow-y-auto"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="text-center">
+              <div className="text-center py-4">
                 <p className="text-[20px] md:text-[24px] font-bold text-white/90 mb-1">
                   Game Over
                 </p>
@@ -365,6 +373,11 @@ export function NoodlerGame({
                     Best: {highScore}
                   </p>
                 )}
+                <MiniLeaderboard
+                  gameId="noodler"
+                  refreshTrigger={leaderboardRefresh}
+                  className="w-48 mx-auto mb-3"
+                />
                 <p className="text-[12px] text-white/40 font-medium">
                   Tap to restart
                 </p>
