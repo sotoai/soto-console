@@ -182,6 +182,11 @@ export function useNoodlerEngine(initialState?: NoodlerSnapshot): EngineReturn {
       ctx.stroke()
     }
 
+    // Border around play area
+    ctx.strokeStyle = NOODLER.BORDER_COLOR
+    ctx.lineWidth = 1.5
+    ctx.strokeRect(ox - 0.5, oy - 0.5, gridW + 1, gridH + 1)
+
     // Regular food (pulsing — smooth at 60fps thanks to rAF)
     const food = foodRef.current
     const pulse = 0.85 + Math.sin(Date.now() / 200) * 0.15
