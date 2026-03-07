@@ -2,6 +2,7 @@ import {
   Smartphone,
   Blocks,
   Dog,
+  Brain,
   Puzzle,
   Car,
   Sword,
@@ -14,6 +15,7 @@ import {
 import { NoodlerGame } from './noodler/NoodlerGame'
 import { ChunkoGame } from './chunko/ChunkoGame'
 import { DropsyGame } from './dropsy/DropsyGame'
+import { BobingtonGame } from './bobington/BobingtonGame'
 import type { GameDefinition } from './types'
 
 export const GAMES: GameDefinition[] = [
@@ -52,6 +54,18 @@ export const GAMES: GameDefinition[] = [
     emoji: '🐶',
     gradient: 'from-amber-500 to-orange-600',
     component: DropsyGame,
+    tileSize: 'medium',
+  },
+
+  {
+    id: 'bobington',
+    name: 'Bobington',
+    description: 'Multiplayer memory challenge',
+    tagline: 'Remember the sequence',
+    icon: Brain,
+    emoji: '🧠',
+    gradient: 'from-violet-500 to-indigo-600',
+    component: BobingtonGame,
     tileSize: 'medium',
   },
 
